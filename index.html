@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивный симулятор эспрессо: Gemilai 3006 & DF64 Gen 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        coffee: {
+                            950: '#13070c',
+                            900: '#1f0d16',
+                            800: '#301523',
+                            700: '#482035',
+                            600: '#68304d',
+                            500: '#944870',
+                            400: '#c26c9a',
+                            300: '#e59ec3',
+                            200: '#f5cce2',
+                            100: '#fce7f3',
+                        },
+                        amber: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            200: '#fecdd3',
+                            300: '#fda4af',
+                            400: '#fb7185',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                            800: '#9f1239',
+                            900: '#881337',
+                            950: '#4c0519',
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        body {
+            background-color: #13070c;
+            background-image: radial-gradient(circle at 50% 0%, rgba(244, 63, 94, 0.14), transparent 60%);
+            color: #fce7f3;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(31, 13, 22, 0.94);
+            border: 1px solid rgba(244, 114, 182, 0.26);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.72);
+        }
+        .btn-active {
+            border-color: #f43f5e !important;
+            background: linear-gradient(145deg, rgba(244, 63, 94, 0.34), rgba(48, 21, 35, 0.96)) !important;
+            box-shadow: 0 0 16px rgba(244, 63, 94, 0.38);
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 4px;
+            background: #301523;
+            border: 1px solid #68304d;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #f43f5e;
+            border: 2px solid #ffffff;
+            margin-top: -7px;
+            box-shadow: 0 0 10px rgba(244, 63, 94, 0.85);
+            transition: transform 0.12s ease, background-color 0.12s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #fb7185;
+        }
+        .espresso-track::-webkit-slider-runnable-track {
+            background: linear-gradient(90deg, #ef4444 0%, #ef4444 12%, #ec4899 18%, #10b981 35%, #10b981 72%, #38bdf8 82%, #38bdf8 100%);
+        }
+        @keyframes pulseStream {
+            0%, 100% { transform: scaleX(1); opacity: 0.95; }
+            50% { transform: scaleX(0.92); opacity: 0.84; }
+        }
+        .stream-live {
+            animation: pulseStream 0.85s infinite ease-in-out;
+            transform-origin: center top;
+        }
+        @keyframes dripDrop {
+            0% { transform: translateY(0px); opacity: 1; }
+            100% { transform: translateY(18px); opacity: 0.15; }
+        }
+        .drip-live {
+            animation: dripDrop 0.95s infinite ease-in;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16 selection:bg-amber-500 selection:text-white">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-40 glass-card border-b border-coffee-700/80">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-amber-500/30">
+                    <i class="fa-solid fa-mug-hot"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h1 class="font-extrabold text-base sm:text-lg text-white tracking-tight">ESPRESSO DIAL-IN SIMULATOR</h1>
+                        <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/25 text-amber-200 border border-amber-400/40 font-semibold">Gemilai 3006 + DF64 Gen 2</span>
+                    </div>
+                    <p class="text-xs text-coffee-200">Рожок 58мм • Вибропомпа 213г/30с (7.10 г/с) • Предсмачивание фикс. 2с • OPV 6–12 бар • PID 1°C • Жернова 64мм (Фикс. 1400 RPM)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 text-xs font-mono flex-wrap">
+                <span class="px-2.5 py-1 rounded-lg bg-coffee-900 border border-coffee-700 text-emerald-400">
+                    <i class="fa-solid fa-wave-square mr-1"></i>Помпа 3006: 7.10 г/с (213г/30с)
+                </span>
+                <span class="px-2.5 py-1 rounded-lg bg-coffee-900 border border-coffee-700 text-amber-300">
+                    <i class="fa-solid fa-compact-disc mr-1"></i>DF64 Gen 2 • 1400 RPM Фикс.
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 pt-4 space-y-4">
+
+        <!-- 1. COUNTRIES HORIZONTAL BAR -->
+        <section class="glass-card rounded-2xl p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-coffee-100 flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-amber-500/25 text-amber-300 flex items-center justify-center text-xs font-mono">1</span>
+                    Страна-производитель кофе (выбор терруара)
+                </h2>
+                <span id="origin-meta-badge" class="text-xs font-mono text-amber-300 bg-amber-500/15 px-2.5 py-0.5 rounded border border-amber-500/30"></span>
+            </div>
+            <div id="countries-row" class="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2"></div>
+        </section>
+
+        <!-- 2. ROAST LEVEL BAR -->
+        <section class="glass-card rounded-2xl p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-coffee-100 flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-amber-500/25 text-amber-300 flex items-center justify-center text-xs font-mono">2</span>
+                    Степень обжарки (от светлой до темной)
+                </h2>
+                <span id="roast-meta-badge" class="text-xs font-mono text-coffee-200"></span>
+            </div>
+            <div id="roasts-row" class="grid grid-cols-1 sm:grid-cols-5 gap-2"></div>
+        </section>
+
+        <!-- 3. PROCESSING METHOD BAR -->
+        <section class="glass-card rounded-2xl p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h2 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-coffee-100 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-amber-500/25 text-amber-300 flex items-center justify-center text-xs font-mono">3</span>
+                        Обработка зерна (включая «Неизвестная»)
+                    </h2>
+                    <label class="flex items-center gap-1.5 text-[11px] text-coffee-200 cursor-pointer select-none bg-coffee-900 px-2 py-0.5 rounded border border-coffee-700">
+                        <input id="chk-auto-process" type="checkbox" checked class="accent-amber-500 rounded cursor-pointer">
+                        <span>Автовыбор типичной при смене страны</span>
+                    </label>
+                </div>
+                <span id="process-meta-badge" class="text-xs font-mono text-amber-300 bg-coffee-900 px-2.5 py-0.5 rounded border border-coffee-700"></span>
+            </div>
+            <div id="processes-row" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
+        </section>
+
+        <!-- 4. DECAF & ROBUSTA BLEND CONSTRUCTOR -->
+        <section class="glass-card rounded-2xl p-4">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                <!-- Decaf Selector (5 cols) -->
+                <div class="lg:col-span-5 space-y-2 border-b lg:border-b-0 lg:border-r border-coffee-800 pb-3 lg:pb-0 lg:pr-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-coffee-100 flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-amber-500/25 text-amber-300 flex items-center justify-center text-xs font-mono">4</span>
+                            Опция Декаф (Декофеинизация)
+                        </h2>
+                        <span id="decaf-meta-badge" class="text-[11px] font-mono text-emerald-400">Обычный кофеин</span>
+                    </div>
+                    <div id="decaf-row" class="grid grid-cols-3 gap-2"></div>
+                </div>
+
+                <!-- Robusta Blend Selector (7 cols) -->
+                <div class="lg:col-span-7 space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-mono font-bold">БЛЕНД АРАБИКА / РОБУСТА</span>
+                            <span id="lbl-blend-ratio" class="text-xs font-mono font-bold text-white">100% Арабика / 0% Робуста</span>
+                        </div>
+                        <span id="robusta-effect-badge" class="text-[11px] font-mono text-amber-300 bg-coffee-900 px-2 py-0.5 rounded border border-coffee-700">
+                            Крема: Стандарт • Тело: +0%
+                        </span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div id="robusta-quick-btns" class="flex flex-wrap gap-1.5">
+                            <button type="button" onclick="setRobusta(0)" data-rob="0" class="rob-btn px-2.5 py-1 rounded-lg text-xs font-mono border border-coffee-700 bg-coffee-900 hover:bg-coffee-800 cursor-pointer btn-active">0% (Чистая Арабика)</button>
+                            <button type="button" onclick="setRobusta(10)" data-rob="10" class="rob-btn px-2.5 py-1 rounded-lg text-xs font-mono border border-coffee-700 bg-coffee-900 hover:bg-coffee-800 cursor-pointer">10%</button>
+                            <button type="button" onclick="setRobusta(20)" data-rob="20" class="rob-btn px-2.5 py-1 rounded-lg text-xs font-mono border border-coffee-700 bg-coffee-900 hover:bg-coffee-800 cursor-pointer">20% (Италия)</button>
+                            <button type="button" onclick="setRobusta(30)" data-rob="30" class="rob-btn px-2.5 py-1 rounded-lg text-xs font-mono border border-coffee-700 bg-coffee-900 hover:bg-coffee-800 cursor-pointer">30% (Баланс)</button>
+                            <button type="button" onclick="setRobusta(50)" data-rob="50" class="rob-btn px-2.5 py-1 rounded-lg text-xs font-mono border border-coffee-700 bg-coffee-900 hover:bg-coffee-800 cursor-pointer">50% (Крепкий)</button>
+                            <button type="button" onclick="setRobusta(100)" data-rob="100" class="rob-btn px-2.5 py-1 rounded-lg text-xs font-mono border border-coffee-700 bg-coffee-900 hover:bg-coffee-800 cursor-pointer">100% Робуста</button>
+                        </div>
+                        <div class="flex-1 min-w-[140px] flex items-center gap-2">
+                            <input id="inp-robusta" type="range" min="0" max="100" step="5" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. BREWING ADVICE BANNER -->
+        <section class="rounded-2xl p-4 bg-gradient-to-r from-amber-950/75 via-coffee-900 to-coffee-900 border border-amber-500/45 shadow-lg">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div class="space-y-1.5 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded bg-amber-500 text-white font-bold text-[11px] uppercase shadow-sm">
+                            <i class="fa-solid fa-lightbulb mr-1"></i>Совет бариста по этому зерну
+                        </span>
+                        <span id="advice-country-badge" class="inline-flex items-center"></span>
+                        <h3 id="advice-heading" class="font-bold text-white text-sm sm:text-base"></h3>
+                    </div>
+                    <p id="advice-body" class="text-xs sm:text-sm text-coffee-100 leading-relaxed"></p>
+                    <div id="advice-pills" class="flex flex-wrap gap-1.5 pt-1 text-[11px] font-mono"></div>
+                </div>
+                <button id="btn-apply-preset" type="button" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/25 transition shrink-0 cursor-pointer flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Применить эталон</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 6. MAIN SIMULATOR GRID (2 COLUMNS ON DESKTOP) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+            <!-- LEFT COLUMN: HARDWARE CONTROLS (5 COLS) -->
+            <div class="lg:col-span-5 space-y-5">
+
+                <!-- DF64 GEN 2 CARD -->
+                <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-amber-500 space-y-4">
+                    <div class="flex items-center justify-between border-b border-coffee-800 pb-2.5">
+                        <div>
+                            <span class="text-[10px] font-mono uppercase text-amber-300 block">Кофемолка • Плоские жернова 64 мм DLC / Italmill</span>
+                            <h3 class="text-base font-bold text-white">DF64 Gen 2</h3>
+                        </div>
+                        <span id="rpm-effect-pill" class="text-[11px] font-mono px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/35">
+                            <i class="fa-solid fa-lock text-[10px] mr-1"></i>1400 RPM Фикс.
+                        </span>
+                    </div>
+
+                    <!-- Grind Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-1.5">
+                                <label class="text-xs font-semibold text-coffee-100">Помол (Эспрессо: 7–20)</label>
+                                <button id="btn-grind-zoom" type="button" class="text-[10px] font-mono px-2 py-0.5 rounded bg-coffee-800 hover:bg-coffee-700 text-amber-300 border border-coffee-600 cursor-pointer">
+                                    Зум 5–25
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="stepParam('grind', -0.1)" class="w-6 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-bold cursor-pointer">-</button>
+                                <span id="lbl-grind" class="font-mono text-base font-bold text-amber-300 min-w-[3.2rem] text-center">12.6</span>
+                                <button type="button" onclick="stepParam('grind', 0.1)" class="w-6 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-bold cursor-pointer">+</button>
+                            </div>
+                        </div>
+                        <input id="inp-grind" type="range" min="5" max="25" step="0.1" value="12.6" class="espresso-track">
+                        <div class="flex justify-between text-[10px] font-mono text-coffee-300">
+                            <span id="lbl-grind-min">5.0 (Мелко / Затык)</span>
+                            <span class="text-emerald-400">▲ Эспрессо 7–20 ▲</span>
+                            <span id="lbl-grind-max">25.0 (Крупно / Пробой)</span>
+                        </div>
+                    </div>
+
+                    <!-- Fixed RPM Display (1400 RPM Fixed, Non-adjustable) -->
+                    <div class="space-y-1.5 pt-1">
+                        <div class="flex justify-between items-center bg-coffee-900/90 px-3 py-2.5 rounded-xl border border-coffee-700">
+                            <div>
+                                <div class="text-xs font-semibold text-coffee-100 flex items-center gap-1.5">
+                                    <span>Скорость вращения жерновов</span>
+                                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-coffee-800 text-coffee-200 border border-coffee-600">Без регулировки</span>
+                                </div>
+                                <div class="text-[10px] font-mono text-coffee-300 mt-0.5">Асинхронный двигатель переменного тока + плазменный ионизатор</div>
+                            </div>
+                            <div class="font-mono text-sm font-bold text-amber-300 bg-coffee-950 px-2.5 py-1 rounded-lg border border-amber-500/40 shrink-0 flex items-center gap-1.5">
+                                <i class="fa-solid fa-lock text-xs text-amber-400"></i>
+                                <span id="lbl-rpm">1400 RPM</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dose Slider (14-22g) -->
+                    <div class="space-y-1 pt-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-semibold text-coffee-100">Закладка в корзину 58 мм</label>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="stepParam('dose', -0.5)" class="w-6 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-bold cursor-pointer">-</button>
+                                <span id="lbl-dose" class="font-mono text-sm font-bold text-white bg-coffee-900 px-2 py-0.5 rounded border border-coffee-700 min-w-[4.2rem] text-center">18.0 г</span>
+                                <button type="button" onclick="stepParam('dose', 0.5)" class="w-6 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-bold cursor-pointer">+</button>
+                            </div>
+                        </div>
+                        <input id="inp-dose" type="range" min="14.0" max="22.0" step="0.5" value="18.0">
+                        <div class="flex justify-between text-[10px] font-mono text-coffee-300">
+                            <span>14.0 г (Тонкая таблетка)</span>
+                            <span>18.0 г (Стандарт)</span>
+                            <span>22.0 г (Высокий слой)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GEMILAI 3006 CARD -->
+                <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-emerald-500 space-y-4">
+                    <div class="flex items-center justify-between border-b border-coffee-800 pb-2.5">
+                        <div>
+                            <span class="text-[10px] font-mono uppercase text-emerald-400 block">Кофеварка 58 мм • Помпа 213г/30с (7.10 г/с)</span>
+                            <h3 class="text-base font-bold text-white">Gemilai 3006</h3>
+                        </div>
+                        <!-- Mode Switch: Timer vs Weight -->
+                        <div class="flex bg-coffee-950 p-1 rounded-lg border border-coffee-700 text-[11px] font-bold">
+                            <button id="mode-btn-time" type="button" onclick="setStopMode('time')" class="px-2 py-1 rounded bg-emerald-500 text-coffee-950 transition cursor-pointer">
+                                ⏱ Стоп по таймеру
+                            </button>
+                            <button id="mode-btn-weight" type="button" onclick="setStopMode('weight')" class="px-2 py-1 rounded text-coffee-200 hover:text-white transition cursor-pointer">
+                                ⚖️ Стоп по весам
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PID Temperature (86-98°C, step 1°C) -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <label class="text-xs font-semibold text-coffee-100">Температура PID (шаг 1°C)</label>
+                                <span id="temp-effect-pill" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30">
+                                    Поток от T°: 0%
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="stepParam('temp', -1)" class="w-6 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-bold cursor-pointer">-</button>
+                                <span id="lbl-temp" class="font-mono text-sm font-bold text-amber-300 bg-coffee-900 px-2 py-0.5 rounded border border-coffee-700 min-w-[4.2rem] text-center">91 °C</span>
+                                <button type="button" onclick="stepParam('temp', 1)" class="w-6 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-bold cursor-pointer">+</button>
+                            </div>
+                        </div>
+                        <input id="inp-temp" type="range" min="86" max="98" step="1" value="91">
+                        <div class="flex justify-between text-[10px] font-mono text-coffee-300">
+                            <span>86°C (Слабее набухание → Быстрее)</span>
+                            <span>93°C</span>
+                            <span>98°C (Набухание + CO₂ → Медленнее)</span>
+                        </div>
+                    </div>
+
+                    <!-- OPV Valve Pressure (6.0-12.0 Bar, step 0.2 Bar) -->
+                    <div class="space-y-1 pt-1">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <label class="text-xs font-semibold text-coffee-100">Клапан давления OPV</label>
+                                <span id="opv-effect-pill" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                    Пик 9.0 → 7.4 бар
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="stepParam('opv', -0.2)" class="w-6 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-bold cursor-pointer">-</button>
+                                <span id="lbl-opv" class="font-mono text-sm font-bold text-emerald-400 bg-coffee-900 px-2 py-0.5 rounded border border-coffee-700 min-w-[4.6rem] text-center">9.0 бар</span>
+                                <button type="button" onclick="stepParam('opv', 0.2)" class="w-6 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-bold cursor-pointer">+</button>
+                            </div>
+                        </div>
+                        <input id="inp-opv" type="range" min="6.0" max="12.0" step="0.2" value="9.0">
+                        <div class="flex justify-between text-[10px] font-mono text-coffee-300">
+                            <span>6.0 бар (Мягкий профиль)</span>
+                            <span>9.0 бар (Стандарт)</span>
+                            <span>12.0 бар (Риск пробоя)</span>
+                        </div>
+                    </div>
+
+                    <!-- Pre-infusion Feed (FIXED 2 SECONDS ON GEMILAI 3006) -->
+                    <div class="space-y-1 pt-1">
+                        <div class="flex justify-between items-center bg-coffee-900/90 px-3 py-2.5 rounded-xl border border-coffee-700">
+                            <div>
+                                <div class="text-xs font-semibold text-coffee-100 flex items-center gap-1.5">
+                                    <span>Подача воды перед паузой</span>
+                                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-coffee-800 text-coffee-200 border border-coffee-600">Без регулировки</span>
+                                </div>
+                                <div class="text-[10px] font-mono text-coffee-300 mt-0.5">Фиксированный импульс предсмачивания Gemilai 3006</div>
+                            </div>
+                            <div class="font-mono text-sm font-bold text-sky-300 bg-coffee-950 px-2.5 py-1 rounded-lg border border-sky-500/40 shrink-0 flex items-center gap-1.5">
+                                <i class="fa-solid fa-lock text-xs text-sky-400"></i>
+                                <span id="lbl-preinf">2 с</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pre-infusion Pause / Blooming (0-15s, STRICT INTEGER SECONDS) -->
+                    <div class="space-y-1 pt-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-semibold text-coffee-100">Пауза предсмачивания (шаг 1 с)</label>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="stepParam('pause', -1)" class="px-2 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-mono font-bold cursor-pointer">-1с</button>
+                                <span id="lbl-pause" class="font-mono text-sm font-bold text-indigo-300 bg-coffee-900 px-2 py-0.5 rounded border border-coffee-700 min-w-[3.8rem] text-center">2 с</span>
+                                <button type="button" onclick="stepParam('pause', 1)" class="px-2 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-mono font-bold cursor-pointer">+1с</button>
+                            </div>
+                        </div>
+                        <input id="inp-pause" type="range" min="0" max="15" step="1" value="2">
+                    </div>
+
+                    <!-- Total Shot Time (12-60s, STRICT INTEGER SECONDS) -->
+                    <div class="space-y-1 pt-1 border-t border-coffee-800/80">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-semibold text-emerald-300">Общее время пролива (шаг 1 с)</label>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="stepParam('shotTime', -1)" class="px-2 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-mono font-bold cursor-pointer">-1с</button>
+                                <span id="lbl-shottime" class="font-mono text-sm font-bold text-emerald-400 bg-coffee-900 px-2 py-0.5 rounded border border-coffee-700 min-w-[4.0rem] text-center">28 с</span>
+                                <button type="button" onclick="stepParam('shotTime', 1)" class="px-2 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-mono font-bold cursor-pointer">+1с</button>
+                            </div>
+                        </div>
+                        <input id="inp-shottime" type="range" min="12" max="60" step="1" value="28">
+                        <div class="flex justify-between text-[10px] font-mono text-coffee-300">
+                            <span>12 с (Короткий)</span>
+                            <span id="lbl-active-pour" class="text-emerald-400">Активный пролив: 24 с</span>
+                            <span>60 с (Длинный)</span>
+                        </div>
+                    </div>
+
+                    <!-- Target Yield / Ratio (1:1.0 to 1:3.5) -->
+                    <div class="space-y-1 pt-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-semibold text-amber-300">Выход эспрессо / Коэффициент (Ratio)</label>
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="stepParam('ratio', -0.1)" class="w-6 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-bold cursor-pointer">-</button>
+                                <span id="lbl-ratio" class="font-mono text-xs font-bold text-amber-300 bg-coffee-900 px-2 py-0.5 rounded border border-coffee-700 min-w-[6.4rem] text-center">1:1.8 (32.4 г)</span>
+                                <button type="button" onclick="stepParam('ratio', 0.1)" class="w-6 h-6 rounded bg-coffee-800 hover:bg-coffee-700 text-white text-xs font-bold cursor-pointer">+</button>
+                            </div>
+                        </div>
+                        <input id="inp-ratio" type="range" min="1.0" max="3.5" step="0.1" value="1.8">
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: TELEMETRY, CHARTS, 58MM BASKET & VERDICT (7 COLS) -->
+            <div class="lg:col-span-7 space-y-5">
+
+                <!-- TOP KPI BAR -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="glass-card rounded-xl p-3 border border-coffee-700">
+                        <span class="text-[11px] text-coffee-300 block">Выход напитка</span>
+                        <div id="kpi-yield" class="text-xl sm:text-2xl font-mono font-extrabold text-amber-300 mt-0.5">32.4 г</div>
+                        <span id="kpi-ratio" class="text-[11px] font-mono text-coffee-200">Brew Ratio 1:1.80</span>
+                    </div>
+                    <div class="glass-card rounded-xl p-3 border border-coffee-700">
+                        <span class="text-[11px] text-coffee-300 block">Экстракция (EY / TDS)</span>
+                        <div id="kpi-ey" class="text-xl sm:text-2xl font-mono font-extrabold text-emerald-400 mt-0.5">20.1%</div>
+                        <span id="kpi-tds" class="text-[11px] font-mono text-amber-200">TDS: 11.17%</span>
+                    </div>
+                    <div class="glass-card rounded-xl p-3 border border-coffee-700">
+                        <span class="text-[11px] text-coffee-300 block">Помпа 3006 (Пик → Финал)</span>
+                        <div id="kpi-pressure" class="text-lg sm:text-xl font-mono font-extrabold text-emerald-400 mt-0.5">9.0 → 7.4 бар</div>
+                        <span id="kpi-flow" class="text-[11px] font-mono text-sky-300">Поток: 1.50 г/с</span>
+                    </div>
+                    <div class="glass-card rounded-xl p-3 border border-coffee-700">
+                        <span class="text-[11px] text-coffee-300 block">Оценка и время</span>
+                        <div id="kpi-time" class="text-xl sm:text-2xl font-mono font-extrabold text-white mt-0.5">28 с • 95/100</div>
+                        <span id="kpi-time-status" class="text-[11px] font-mono text-emerald-400">Оптимум</span>
+                    </div>
+                </div>
+
+                <!-- CHART 1: EXTRACTION DYNAMICS WITH OPTIMAL ZONE & FLOATING POINT -->
+                <div class="glass-card rounded-2xl p-4 space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line text-amber-400"></i>
+                                Динамика пролива (Gemilai 3006 • 213г/30с), Оптимальная зона и Плавающая точка
+                            </h3>
+                            <p id="chart1-subtitle" class="text-[11px] font-mono text-coffee-200"></p>
+                        </div>
+                        <div class="flex items-center gap-3 text-[11px] font-mono">
+                            <span class="flex items-center gap-1 text-amber-300"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>Вес (г)</span>
+                            <span class="flex items-center gap-1 text-sky-300"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span>Поток (г/с)</span>
+                            <span class="flex items-center gap-1 text-emerald-400"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>Давление (бар)</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-coffee-950 rounded-xl border border-coffee-800 p-2" style="height: 270px;">
+                        <canvas id="chart-dynamics" style="width: 100%; height: 100%; display: block;"></canvas>
+                    </div>
+                </div>
+
+                <!-- CHART 2 (EY/TDS MAP) + 58MM PORTAFILTER BASKET VISUALIZATION -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+
+                    <!-- 2D Control Map (6 cols, explicit 270px height) -->
+                    <div class="md:col-span-6 glass-card rounded-2xl p-4 flex flex-col justify-between space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                                <i class="fa-solid fa-crosshairs text-emerald-400"></i>
+                                Карта баланса (EY% / TDS%)
+                            </h3>
+                            <span id="map-zone-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">
+                                В оптимуме
+                            </span>
+                        </div>
+                        <div class="w-full bg-coffee-950 rounded-xl border border-coffee-800 p-2" style="height: 270px;">
+                            <canvas id="chart-map" style="width: 100%; height: 100%; display: block;"></canvas>
+                        </div>
+                        <div class="flex justify-between text-[10px] font-mono text-coffee-300">
+                            <span>Горизонталь: Выход экстракта EY%</span>
+                            <span>Вертикаль: Плотность TDS%</span>
+                        </div>
+                    </div>
+
+                    <!-- 58mm Basket Cross-Section (6 cols) -->
+                    <div class="md:col-span-6 glass-card rounded-2xl p-4 flex flex-col justify-between space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                                    <i class="fa-solid fa-filter text-amber-400"></i>
+                                    Разрез корзины 58 мм
+                                </h3>
+                            </div>
+                            <span id="basket-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">
+                                Мышиный хвостик
+                            </span>
+                        </div>
+
+                        <div class="w-full bg-coffee-950 rounded-xl border border-coffee-800 flex items-center justify-center p-2" style="height: 240px;">
+                            <svg id="svg-basket" viewBox="0 0 320 215" class="w-full h-full max-w-[320px]">
+                                <defs>
+                                    <linearGradient id="gradSteel" x1="0" y1="0" x2="1" y2="0">
+                                        <stop offset="0%" stop-color="#52525b"/>
+                                        <stop offset="50%" stop-color="#a1a1aa"/>
+                                        <stop offset="100%" stop-color="#3f3f46"/>
+                                    </linearGradient>
+                                    <linearGradient id="gradPuckNormal" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#6b3e23"/>
+                                        <stop offset="100%" stop-color="#2e1808"/>
+                                    </linearGradient>
+                                    <linearGradient id="gradPuckChoked" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#291105"/>
+                                        <stop offset="100%" stop-color="#0d0502"/>
+                                    </linearGradient>
+                                    <linearGradient id="gradCone" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#451a03"/>
+                                        <stop offset="55%" stop-color="#b45309"/>
+                                        <stop offset="100%" stop-color="#f59e0b"/>
+                                    </linearGradient>
+                                    <linearGradient id="gradGusher" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="#d97706"/>
+                                        <stop offset="60%" stop-color="#fbbf24"/>
+                                        <stop offset="100%" stop-color="#fef08a"/>
+                                    </linearGradient>
+                                </defs>
+
+                                <!-- Shower Screen 58mm -->
+                                <rect x="65" y="6" width="190" height="10" rx="3" fill="url(#gradSteel)"/>
+                                <text x="160" y="13.5" text-anchor="middle" fill="#18181b" font-size="7" font-family="JetBrains Mono" font-weight="bold">ДУШЕВАЯ СЕТКА 58 ММ</text>
+
+                                <!-- Water drops -->
+                                <g stroke="#38bdf8" stroke-width="2" stroke-dasharray="3 2">
+                                    <line x1="90" y1="18" x2="90" y2="28"/>
+                                    <line x1="125" y1="18" x2="125" y2="28"/>
+                                    <line x1="160" y1="18" x2="160" y2="28"/>
+                                    <line x1="195" y1="18" x2="195" y2="28"/>
+                                    <line x1="230" y1="18" x2="230" y2="28"/>
+                                </g>
+
+                                <!-- Portafilter Walls -->
+                                <path d="M 55 24 L 68 24 L 74 92 L 246 92 L 252 24 L 265 24 L 255 98 L 65 98 Z" fill="url(#gradSteel)"/>
+                                <rect x="262" y="28" width="46" height="12" rx="4" fill="#27272a" stroke="#52525b"/>
+
+                                <!-- Coffee Puck -->
+                                <rect id="svg-puck" x="73" y="42" width="174" height="48" rx="3" fill="url(#gradPuckNormal)" stroke="#78350f"/>
+                                <rect id="svg-puckscreen" x="72" y="38" width="176" height="4" rx="1.5" fill="#9ca3af"/>
+
+                                <!-- Channel Cracks -->
+                                <g id="svg-cracks" opacity="0">
+                                    <path d="M 108 42 L 100 66 L 114 91" stroke="#ef4444" stroke-width="2.5" fill="none" stroke-dasharray="3 2"/>
+                                    <path d="M 162 42 L 170 66 L 156 91" stroke="#38bdf8" stroke-width="2.5" fill="none" stroke-dasharray="3 2"/>
+                                    <path d="M 212 42 L 220 68 L 204 91" stroke="#ef4444" stroke-width="2.5" fill="none" stroke-dasharray="3 2"/>
+                                </g>
+
+                                <!-- Puck Text -->
+                                <text id="svg-puck-text" x="160" y="69" text-anchor="middle" fill="#fde68a" font-size="9" font-family="JetBrains Mono" font-weight="bold">18.0г | 9.0→7.4Б</text>
+
+                                <!-- Stream Cone -->
+                                <g id="svg-stream-group" class="stream-live">
+                                    <polygon id="svg-cone" points="95,98 225,98 167,132 153,132" fill="url(#gradCone)"/>
+                                    <rect id="svg-tail" x="155" y="128" width="10" height="65" rx="5" fill="url(#gradCone)"/>
+                                </g>
+
+                                <!-- Choking Drips -->
+                                <g id="svg-drips" class="drip-live" opacity="0">
+                                    <circle cx="145" cy="108" r="3.5" fill="#78350f"/>
+                                    <circle cx="160" cy="122" r="4" fill="#92400e"/>
+                                    <circle cx="176" cy="112" r="3.5" fill="#78350f"/>
+                                </g>
+
+                                <!-- Side Spritzers -->
+                                <g id="svg-sprays" opacity="0">
+                                    <line x1="110" y1="99" x2="70" y2="155" stroke="#f43f5e" stroke-width="2.5" stroke-dasharray="4 3"/>
+                                    <line x1="210" y1="99" x2="250" y2="155" stroke="#f43f5e" stroke-width="2.5" stroke-dasharray="4 3"/>
+                                </g>
+
+                                <!-- Espresso Glass -->
+                                <path d="M 114 142 L 122 204 Q 124 209 132 209 L 188 209 Q 196 209 198 204 L 206 142" fill="rgba(48,21,35,0.45)" stroke="#f5cce2" stroke-width="2"/>
+                                <rect id="svg-liquid" x="121" y="168" width="78" height="38" rx="3" fill="#92400e"/>
+                                <rect id="svg-crema" x="120" y="162" width="80" height="7" rx="2" fill="#f59e0b"/>
+                                <text id="svg-cup-lbl" x="160" y="196" text-anchor="middle" fill="#ffffff" font-size="10" font-family="JetBrains Mono" font-weight="bold">32.4 г</text>
+                            </svg>
+                        </div>
+
+                        <div id="basket-footer-note" class="text-[11px] text-coffee-100 bg-coffee-900 px-3 py-1.5 rounded-lg border border-coffee-700 truncate">
+                            Ровная экстракция без пробоев.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TASTE PROFILE & HONEST BARISTA VERDICT (5 FLAVOR BARS) -->
+                <div class="glass-card rounded-2xl p-4 sm:p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                            <i class="fa-solid fa-scale-balanced text-amber-400"></i>
+                            Баланс вкуса и честный вердикт бариста
+                        </h3>
+                        <span id="verdict-score-badge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            Оценка шота: 95/100
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                        <div class="bg-coffee-900/90 p-2.5 rounded-xl border border-coffee-800">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-coffee-200">Кислотность</span>
+                                <span id="lbl-acid" class="font-mono font-bold text-yellow-300">65%</span>
+                            </div>
+                            <div class="w-full h-2 bg-coffee-950 rounded-full overflow-hidden">
+                                <div id="bar-acid" class="h-full bg-yellow-400 rounded-full transition-all" style="width:65%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-coffee-900/90 p-2.5 rounded-xl border border-coffee-800">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-coffee-200">Сладость</span>
+                                <span id="lbl-sweet" class="font-mono font-bold text-emerald-400">86%</span>
+                            </div>
+                            <div class="w-full h-2 bg-coffee-950 rounded-full overflow-hidden">
+                                <div id="bar-sweet" class="h-full bg-emerald-400 rounded-full transition-all" style="width:86%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-coffee-900/90 p-2.5 rounded-xl border border-coffee-800">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-coffee-200">Горечь</span>
+                                <span id="lbl-bitter" class="font-mono font-bold text-orange-400">32%</span>
+                            </div>
+                            <div class="w-full h-2 bg-coffee-950 rounded-full overflow-hidden">
+                                <div id="bar-bitter" class="h-full bg-orange-500 rounded-full transition-all" style="width:32%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-coffee-900/90 p-2.5 rounded-xl border border-coffee-800">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-coffee-200">Тело</span>
+                                <span id="lbl-body" class="font-mono font-bold text-amber-300">78%</span>
+                            </div>
+                            <div class="w-full h-2 bg-coffee-950 rounded-full overflow-hidden">
+                                <div id="bar-body" class="h-full bg-amber-500 rounded-full transition-all" style="width:78%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-coffee-900/90 p-2.5 rounded-xl border border-coffee-800 col-span-2 sm:col-span-1">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-coffee-200">Баланс</span>
+                                <span id="lbl-balance" class="font-mono font-bold text-sky-300">95%</span>
+                            </div>
+                            <div class="w-full h-2 bg-coffee-950 rounded-full overflow-hidden">
+                                <div id="bar-balance" class="h-full bg-sky-400 rounded-full transition-all" style="width:95%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="verdict-card" class="rounded-xl p-3.5 bg-emerald-950/30 border border-emerald-500/40 space-y-1">
+                        <div id="verdict-title" class="text-xs font-bold uppercase text-emerald-400"></div>
+                        <p id="verdict-desc" class="text-xs text-coffee-100 leading-relaxed"></p>
+                        <div id="verdict-fix" class="text-[11px] font-mono text-amber-200 pt-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. MILK & CREAM DRINKS BLOCK (6 RECIPES INCLUDING RAF) -->
+        <section class="glass-card rounded-2xl p-5 border-t-4 border-t-amber-400 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-coffee-800 pb-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-mug-saucer text-amber-400"></i>
+                        Молочные и сливочные напитки на базе полученного эспрессо (включая Раф)
+                    </h2>
+                    <p class="text-xs text-coffee-200">
+                        Точные дозировки сливок, молока, ванильного сахара и льда автоматически пересчитаны под ваш шот:
+                        <span id="milk-shot-info" class="text-amber-300 font-mono font-bold">32.4 г (TDS 11.2%)</span>
+                    </p>
+                </div>
+                <span class="text-[11px] font-mono px-2.5 py-1 rounded bg-amber-500/20 text-amber-200 border border-amber-500/35">
+                    6 популярных рецептов • Автопересчет граммовок
+                </span>
+            </div>
+            <div id="milk-recipes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- 8. NON-MILK (BLACK & SIGNATURE) DRINKS BLOCK (6 RECIPES) -->
+        <section class="glass-card rounded-2xl p-5 border-t-4 border-t-sky-400 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-coffee-800 pb-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-glass-water text-sky-400"></i>
+                        Рецепты напитков без молока (черный кофе и авторские миксы)
+                    </h2>
+                    <p class="text-xs text-coffee-200">
+                        Дозировки горячей воды, тоника, свежевыжатого апельсинового сока и льда рассчитаны под вес и концентрацию вашего шота.
+                    </p>
+                </div>
+                <span class="text-[11px] font-mono px-2.5 py-1 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                    6 рецептов • Горячие и холодные
+                </span>
+            </div>
+            <div id="black-recipes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. REFERENCE DATA: COUNTRIES (WITH INLINE SVG FLAGS), ROASTS, PROCESSES, DECAF
+        // ==========================================
+        const FIXED_RPM = 1400; // DF64 Gen 2 fixed motor speed
+        const FIXED_PREINF = 2; // Gemilai 3006 fixed 2s water feed before pause
+        const PUMP_FREE_DEBIT_30S = 213.0; // Gemilai 3006: 213g in 30s (7.10 g/s)
+
+        const COUNTRY_FLAGS_SVG = {
+            brazil: `<svg viewBox="0 0 28 20" class="w-7 h-5 rounded shadow-sm border border-white/15 shrink-0"><rect width="28" height="20" fill="#009b3a"/><polygon points="14,2.2 25.5,10 14,17.8 2.5,10" fill="#fedf00"/><circle cx="14" cy="10" r="4.2" fill="#002776"/><path d="M10.2,9.2 Q14,7.8 17.8,10.5" stroke="#ffffff" stroke-width="1" fill="none"/></svg>`,
+            ethiopia: `<svg viewBox="0 0 28 20" class="w-7 h-5 rounded shadow-sm border border-white/15 shrink-0"><rect width="28" height="6.67" fill="#078930"/><rect y="6.67" width="28" height="6.67" fill="#fcdd09"/><rect y="13.33" width="28" height="6.67" fill="#da121a"/><circle cx="14" cy="10" r="4.2" fill="#0f47af"/><polygon points="14,6.7 14.9,9.1 17.4,9.1 15.4,10.6 16.1,13 14,11.5 11.9,13 12.6,10.6 10.6,9.1 13.1,9.1" fill="#fcdd09"/></svg>`,
+            colombia: `<svg viewBox="0 0 28 20" class="w-7 h-5 rounded shadow-sm border border-white/15 shrink-0"><rect width="28" height="10" fill="#fcd116"/><rect y="10" width="28" height="5" fill="#003893"/><rect y="15" width="28" height="5" fill="#ce1126"/></svg>`,
+            kenya: `<svg viewBox="0 0 28 20" class="w-7 h-5 rounded shadow-sm border border-white/15 shrink-0"><rect width="28" height="20" fill="#ffffff"/><rect width="28" height="5.5" fill="#000000"/><rect y="7.25" width="28" height="5.5" fill="#bb0000"/><rect y="14.5" width="28" height="5.5" fill="#006600"/><line x1="11.5" y1="3.5" x2="16.5" y2="16.5" stroke="#ffffff" stroke-width="1.1"/><line x1="16.5" y1="3.5" x2="11.5" y2="16.5" stroke="#ffffff" stroke-width="1.1"/><ellipse cx="14" cy="10" rx="2.7" ry="5" fill="#bb0000" stroke="#ffffff" stroke-width="0.8"/><ellipse cx="14" cy="10" rx="1" ry="2.2" fill="#000000"/></svg>`,
+            guatemala: `<svg viewBox="0 0 28 20" class="w-7 h-5 rounded shadow-sm border border-white/15 shrink-0"><rect width="9.33" height="20" fill="#4997d0"/><rect x="9.33" width="9.34" height="20" fill="#ffffff"/><rect x="18.67" width="9.33" height="20" fill="#4997d0"/><circle cx="14" cy="10" r="2.7" fill="none" stroke="#659f42" stroke-width="1.2"/><circle cx="14" cy="9.6" r="1.1" fill="#d4af37"/></svg>`,
+            indonesia: `<svg viewBox="0 0 28 20" class="w-7 h-5 rounded shadow-sm border border-white/15 shrink-0"><rect width="28" height="10" fill="#ce1126"/><rect y="10" width="28" height="10" fill="#ffffff"/></svg>`,
+            costarica: `<svg viewBox="0 0 28 20" class="w-7 h-5 rounded shadow-sm border border-white/15 shrink-0"><rect width="28" height="20" fill="#002b7f"/><rect y="3.3" width="28" height="13.4" fill="#ffffff"/><rect y="6.6" width="28" height="6.8" fill="#ce1126"/><ellipse cx="9.5" cy="10" rx="2" ry="2.3" fill="#ffffff" stroke="#d4af37" stroke-width="0.7"/></svg>`,
+            peru: `<svg viewBox="0 0 28 20" class="w-7 h-5 rounded shadow-sm border border-white/15 shrink-0"><rect width="9.33" height="20" fill="#d91023"/><rect x="9.33" width="9.34" height="20" fill="#ffffff"/><rect x="18.67" width="9.33" height="20" fill="#d91023"/><circle cx="14" cy="10" r="2.3" fill="none" stroke="#d4af37" stroke-width="1"/></svg>`,
+            rwanda: `<svg viewBox="0 0 28 20" class="w-7 h-5 rounded shadow-sm border border-white/15 shrink-0"><rect width="28" height="10" fill="#00a1de"/><rect y="10" width="28" height="5" fill="#fad201"/><rect y="15" width="28" height="5" fill="#20603d"/><circle cx="22" cy="5" r="2.4" fill="#fad201"/></svg>`,
+            honduras: `<svg viewBox="0 0 28 20" class="w-7 h-5 rounded shadow-sm border border-white/15 shrink-0"><rect width="28" height="6.67" fill="#00bce4"/><rect y="6.67" width="28" height="6.67" fill="#ffffff"/><rect y="13.33" width="28" height="6.67" fill="#00bce4"/><circle cx="14" cy="10" r="0.9" fill="#00bce4"/><circle cx="10.5" cy="8.4" r="0.9" fill="#00bce4"/><circle cx="10.5" cy="11.6" r="0.9" fill="#00bce4"/><circle cx="17.5" cy="8.4" r="0.9" fill="#00bce4"/><circle cx="17.5" cy="11.6" r="0.9" fill="#00bce4"/></svg>`
+        };
+
+        const COUNTRIES = [
+            { id: 'brazil', name: 'Бразилия', code: 'BR', region: 'Серрадо', altitude: '1100м', notes: 'Фундук, молочный шоколад, карамель', defaultProcess: 'natural', fines: 0.92, recGrind: 12.6, recTemp: 91, recOpv: 9.0, recPause: 2, recRatio: 1.8, baseAcid: 35, baseSweet: 84, baseBody: 86 },
+            { id: 'ethiopia', name: 'Эфиопия', code: 'ET', region: 'Иргачеффе', altitude: '2050м', notes: 'Бергамот, жасмин, персик, лайм', defaultProcess: 'washed', fines: 1.22, recGrind: 14.8, recTemp: 95, recOpv: 8.0, recPause: 5, recRatio: 2.4, baseAcid: 88, baseSweet: 80, baseBody: 62 },
+            { id: 'colombia', name: 'Колумбия', code: 'CO', region: 'Уила', altitude: '1750м', notes: 'Красное яблоко, темный виноград, карамель', defaultProcess: 'washed', fines: 1.00, recGrind: 13.5, recTemp: 93, recOpv: 9.0, recPause: 3, recRatio: 2.1, baseAcid: 68, baseSweet: 85, baseBody: 78 },
+            { id: 'kenya', name: 'Кения', code: 'KE', region: 'Ньери SL28', altitude: '1950м', notes: 'Черная смородина, грейпфрут, клюква', defaultProcess: 'washed', fines: 1.16, recGrind: 14.4, recTemp: 95, recOpv: 8.0, recPause: 6, recRatio: 2.5, baseAcid: 92, baseSweet: 76, baseBody: 68 },
+            { id: 'guatemala', name: 'Гватемала', code: 'GT', region: 'Антигуа', altitude: '1650м', notes: 'Темный шоколад, апельсин, пряности', defaultProcess: 'washed', fines: 1.00, recGrind: 13.4, recTemp: 93, recOpv: 9.0, recPause: 3, recRatio: 2.0, baseAcid: 60, baseSweet: 84, baseBody: 80 },
+            { id: 'indonesia', name: 'Индонезия', code: 'ID', region: 'Суматра', altitude: '1350м', notes: 'Кедр, специи, горький шоколад', defaultProcess: 'wethulled', fines: 0.94, recGrind: 13.0, recTemp: 89, recOpv: 8.6, recPause: 2, recRatio: 1.7, baseAcid: 28, baseSweet: 75, baseBody: 94 },
+            { id: 'costarica', name: 'Коста-Рика', code: 'CR', region: 'Тарразу', altitude: '1700м', notes: 'Цветочный мед, персик, миндаль', defaultProcess: 'honey', fines: 1.03, recGrind: 13.6, recTemp: 93, recOpv: 8.6, recPause: 4, recRatio: 2.1, baseAcid: 66, baseSweet: 90, baseBody: 78 },
+            { id: 'peru', name: 'Перу', code: 'PE', region: 'Кахамарка', altitude: '1650м', notes: 'Сливочная ириска, груша, какао', defaultProcess: 'washed', fines: 0.96, recGrind: 13.0, recTemp: 92, recOpv: 9.0, recPause: 3, recRatio: 2.0, baseAcid: 52, baseSweet: 83, baseBody: 76 },
+            { id: 'rwanda', name: 'Руанда', code: 'RW', region: 'Ньямашеке', altitude: '1850м', notes: 'Красный апельсин, курага, черный чай', defaultProcess: 'washed', fines: 1.12, recGrind: 14.2, recTemp: 94, recOpv: 8.6, recPause: 5, recRatio: 2.3, baseAcid: 80, baseSweet: 84, baseBody: 66 },
+            { id: 'honduras', name: 'Гондурас', code: 'HN', region: 'Маркала', altitude: '1550м', notes: 'Тростниковый сахар, какао, фундук', defaultProcess: 'washed', fines: 0.98, recGrind: 13.2, recTemp: 92, recOpv: 9.0, recPause: 3, recRatio: 2.0, baseAcid: 55, baseSweet: 82, baseBody: 80 }
+        ];
+
+        const ROASTS = [
+            { id: 'light', name: 'Светлая', agtron: 'Agtron 72', color: '#b87d4b', solubility: 0.85, grindOff: -1.0, tempOff: +2, opvOff: -0.4, pauseOff: +2, ratioOff: +0.3, acidMod: +16, bitterMod: -12, bodyMod: -12, desc: 'Плотная структура зерна: требует высокой температуры PID (94–96°C) и более мелкого помола на DF64 Gen 2.' },
+            { id: 'medium_light', name: 'Светло-средняя', agtron: 'Agtron 64', color: '#965d30', solubility: 0.93, grindOff: -0.4, tempOff: +1, opvOff: -0.4, pauseOff: +1, ratioOff: +0.1, acidMod: +8, bitterMod: -6, bodyMod: -5, desc: 'Современный спешелти стиль: яркие ягоды и карамельная сладость.' },
+            { id: 'medium', name: 'Средняя', agtron: 'Agtron 56', color: '#73421c', solubility: 1.00, grindOff: 0, tempOff: 0, opvOff: 0, pauseOff: 0, ratioOff: 0, acidMod: 0, bitterMod: 0, bodyMod: 0, desc: 'Эталонный баланс растворимости для эспрессо и молочных напитков.' },
+            { id: 'medium_dark', name: 'Средне-темная', agtron: 'Agtron 48', color: '#4f2b10', solubility: 1.10, grindOff: +0.7, tempOff: -2, opvOff: 0, pauseOff: -1, ratioOff: -0.2, acidMod: -12, bitterMod: +12, bodyMod: +10, desc: 'Пористое зерно, активно выделяет CO₂ при нагреве, дает плотные крема.' },
+            { id: 'dark', name: 'Темная', agtron: 'Agtron 40', color: '#2e1808', solubility: 1.20, grindOff: +1.4, tempOff: -4, opvOff: -0.4, pauseOff: -2, ratioOff: -0.3, acidMod: -22, bitterMod: +24, bodyMod: +18, desc: 'Классическая итальянская обжарка: требует 87–90°C, укрупнения помола и короткого коэффициента.' }
+        ];
+
+        const PROCESSES = [
+            { id: 'washed', name: 'Мытая', badge: 'Чистота и Кислотность', solMod: 0.97, grindOff: -0.2, tempOff: +1, acidMod: +7, sweetMod: 0, bitterMod: -3, bodyMod: -4 },
+            { id: 'natural', name: 'Натуральная', badge: 'Ягоды и Тело', solMod: 1.05, grindOff: +0.3, tempOff: -1, acidMod: -4, sweetMod: +7, bitterMod: +2, bodyMod: +7 },
+            { id: 'honey', name: 'Хани (Honey)', badge: 'Медовая сладость', solMod: 1.02, grindOff: +0.1, tempOff: 0, acidMod: 0, sweetMod: +8, bitterMod: 0, bodyMod: +4 },
+            { id: 'anaerobic', name: 'Анаэробная', badge: 'Фермент / Пористое', solMod: 1.12, grindOff: +0.6, tempOff: -2, acidMod: +4, sweetMod: +9, bitterMod: +6, bodyMod: +6 },
+            { id: 'wethulled', name: 'Гилинг Басах', badge: 'Пряное сиропистое', solMod: 1.07, grindOff: +0.4, tempOff: -2, acidMod: -12, sweetMod: 0, bitterMod: +5, bodyMod: +12 },
+            { id: 'unknown', name: 'Неизвестная', badge: 'Базовый стандарт', solMod: 1.00, grindOff: 0, tempOff: 0, acidMod: 0, sweetMod: 0, bitterMod: 0, bodyMod: 0 }
+        ];
+
+        const DECAFS = [
+            { id: 'regular', name: 'Обычное зерно', sub: '100% Кофеин', grindOff: 0, tempOff: 0, opvOff: 0, ratioOff: 0, erosionBoost: 1.0, acidMod: 0, sweetMod: 0, bitterMod: 0, bodyMod: 0 },
+            { id: 'swiss', name: 'Swiss Water Decaf', sub: 'Водная декофеинизация', grindOff: -0.9, tempOff: -2, opvOff: -0.4, ratioOff: -0.15, erosionBoost: 1.32, acidMod: -5, sweetMod: +2, bitterMod: +4, bodyMod: -4 },
+            { id: 'sugarcane', name: 'EA Sugarcane Decaf', sub: 'Тростниковый этилацетат', grindOff: -0.7, tempOff: -2, opvOff: -0.4, ratioOff: -0.10, erosionBoost: 1.24, acidMod: -2, sweetMod: +6, bitterMod: +2, bodyMod: -2 }
+        ];
+
+        // ==========================================
+        // 2. STATE MANAGEMENT (Fixed preinf = 2s, Fixed RPM = 1400)
+        // ==========================================
+        const state = {
+            countryId: 'brazil',
+            roastId: 'medium',
+            processId: 'natural',
+            decafId: 'regular',
+            robustaPct: 0,
+            stopMode: 'time',
+            zoomGrind: true,
+            grind: 12.6,
+            rpm: FIXED_RPM,
+            dose: 18.0,
+            temp: 91,
+            opv: 9.0,
+            preinf: FIXED_PREINF,
+            pause: 2,
+            shotTime: 28,
+            ratio: 1.8,
+            trail: []
+        };
+
+        const getCountry = () => COUNTRIES.find(c => c.id === state.countryId) || COUNTRIES[0];
+        const getRoast = () => ROASTS.find(r => r.id === state.roastId) || ROASTS[2];
+        const getProcess = () => PROCESSES.find(p => p.id === state.processId) || PROCESSES[5];
+        const getDecaf = () => DECAFS.find(d => d.id === state.decafId) || DECAFS[0];
+
+        // Single source of truth for ideal recipe
+        function getIdealRecipe(
+            countryId = state.countryId,
+            roastId = state.roastId,
+            processId = state.processId,
+            decafId = state.decafId,
+            robustaPct = state.robustaPct
+        ) {
+            const c = COUNTRIES.find(item => item.id === countryId) || COUNTRIES[0];
+            const r = ROASTS.find(item => item.id === roastId) || ROASTS[2];
+            const p = PROCESSES.find(item => item.id === processId) || PROCESSES[5];
+            const defP = PROCESSES.find(item => item.id === c.defaultProcess) || PROCESSES[5];
+            const d = DECAFS.find(item => item.id === decafId) || DECAFS[0];
+            const robFrac = robustaPct / 100.0;
+
+            const dGrindProc = p.grindOff - defP.grindOff;
+            const dTempProc = p.tempOff - defP.tempOff;
+
+            const robGrindOff = +(robFrac * 1.2).toFixed(2);
+            const robTempOff = -Math.round(robFrac * 3.0);
+            const robOpvOff = -(robFrac * 0.4);
+            const robRatioOff = -(robFrac * 0.25);
+
+            const dose = 18.0;
+            const grind = Math.max(7.0, Math.min(20.0, +(c.recGrind + r.grindOff + dGrindProc + d.grindOff + robGrindOff).toFixed(1)));
+            const rpm = FIXED_RPM;
+            const temp = Math.max(86, Math.min(98, Math.round(c.recTemp + r.tempOff + dTempProc + d.tempOff + robTempOff)));
+            const opv = Math.max(6.0, Math.min(12.0, +(Math.round((c.recOpv + r.opvOff + d.opvOff + robOpvOff) * 5) / 5).toFixed(1)));
+
+            // Strictly fixed 2s pre-infusion on Gemilai 3006
+            const preinf = FIXED_PREINF;
+            const pause = Math.max(0, Math.min(15, Math.round(c.recPause + r.pauseOff - robFrac * 1.0)));
+            const ratio = Math.max(1.0, Math.min(3.5, +(c.recRatio + r.ratioOff + d.ratioOff + robRatioOff).toFixed(1)));
+            const targetYield = +(dose * ratio).toFixed(1);
+            const shotTime = Math.max(12, Math.min(60, Math.round(24 + preinf + pause)));
+
+            let specialNotes = '';
+            if (d.id !== 'regular') {
+                specialNotes += ` Декаф (${d.name}) имеет пористую структуру и быстрее теряет сопротивление во второй половине пролива — помол на DF64 Gen 2 уменьшен до ${grind.toFixed(1)} при фиксированных 1400 RPM.`;
+            }
+            if (robustaPct > 0) {
+                specialNotes += ` Добавление ${robustaPct}% робусты кратно усиливает выделение CO₂ и дает густую тигровую крема — температура PID снижена до ${temp} °C для защиты от горечи.`;
+            }
+
+            const dynamicAdvice = `Дескрипторы: ${c.notes}. Для конфигурации «${c.name} • ${r.name} • ${p.name}${d.id !== 'regular' ? ' • ' + d.name : ''}${robustaPct > 0 ? ' • +' + robustaPct + '% Робуста' : ''}» выставите на DF64 Gen 2 помол ${grind.toFixed(1)} (при фиксированных ${rpm} RPM, плоские жернова 64 мм), а на Gemilai 3006 — температуру PID ${temp} °C, клапан OPV ${opv.toFixed(1)} бар, фиксированную подачу предсмачивания ${preinf} с и паузу блуминга ${pause} с до выхода 1:${ratio.toFixed(1)} (${targetYield.toFixed(1)} г за ${shotTime} с).${specialNotes}`;
+
+            return {
+                grind,
+                rpm,
+                dose,
+                temp,
+                opv,
+                preinf,
+                pause,
+                ratio,
+                targetYield,
+                shotTime,
+                dynamicAdvice
+            };
+        }
+
+        function getPreset() {
+            return getIdealRecipe(state.countryId, state.roastId, state.processId, state.decafId, state.robustaPct);
+        }
+
+        // ==========================================
+        // 3. UI SELECTORS & SLIDERS SYNC
+        // ==========================================
+        function renderSelectors() {
+            const cContainer = document.getElementById('countries-row');
+            cContainer.innerHTML = COUNTRIES.map(c => `
+                <button type="button" onclick="selectCountry('${c.id}')"
+                    class="p-2.5 rounded-xl border border-coffee-700 bg-coffee-900/70 hover:bg-coffee-800 text-left transition cursor-pointer ${c.id === state.countryId ? 'btn-active' : ''}">
+                    <div class="flex items-center justify-between gap-1.5 mb-1">
+                        <div class="flex items-center gap-1.5">
+                            ${COUNTRY_FLAGS_SVG[c.id] || ''}
+                            <span class="text-[10px] font-mono font-bold text-amber-300">${c.code}</span>
+                        </div>
+                        <span class="text-[10px] font-mono text-coffee-300">${c.altitude}</span>
+                    </div>
+                    <div class="font-bold text-xs text-white truncate mt-1">${c.name}</div>
+                    <div class="text-[10px] text-coffee-300 truncate">${c.region}</div>
+                </button>
+            `).join('');
+
+            const rContainer = document.getElementById('roasts-row');
+            rContainer.innerHTML = ROASTS.map(r => `
+                <button type="button" onclick="selectRoast('${r.id}')"
+                    class="p-2.5 rounded-xl border border-coffee-700 bg-coffee-900/70 hover:bg-coffee-800 text-left transition cursor-pointer ${r.id === state.roastId ? 'btn-active' : ''}">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-xs text-white">${r.name}</span>
+                        <span class="w-3.5 h-3.5 rounded-full border border-white/30" style="background:${r.color}"></span>
+                    </div>
+                    <p class="text-[10px] text-coffee-200 line-clamp-2">${r.desc}</p>
+                </button>
+            `).join('');
+
+            const pContainer = document.getElementById('processes-row');
+            pContainer.innerHTML = PROCESSES.map(p => `
+                <button type="button" onclick="selectProcess('${p.id}')"
+                    class="p-2.5 rounded-xl border border-coffee-700 bg-coffee-900/70 hover:bg-coffee-800 text-left transition cursor-pointer ${p.id === state.processId ? 'btn-active' : ''}">
+                    <div class="font-bold text-xs text-white">${p.name}</div>
+                    <div class="text-[10px] font-mono text-amber-300 mt-0.5">${p.badge}</div>
+                </button>
+            `).join('');
+
+            const dContainer = document.getElementById('decaf-row');
+            dContainer.innerHTML = DECAFS.map(d => `
+                <button type="button" onclick="selectDecaf('${d.id}')"
+                    class="p-2 rounded-xl border border-coffee-700 bg-coffee-900/70 hover:bg-coffee-800 text-left transition cursor-pointer ${d.id === state.decafId ? 'btn-active' : ''}">
+                    <div class="font-bold text-xs text-white truncate">${d.name}</div>
+                    <div class="text-[10px] font-mono text-coffee-200 truncate">${d.sub}</div>
+                </button>
+            `).join('');
+
+            document.querySelectorAll('.rob-btn').forEach(btn => {
+                const val = parseInt(btn.getAttribute('data-rob'), 10);
+                if (val === state.robustaPct) btn.classList.add('btn-active');
+                else btn.classList.remove('btn-active');
+            });
+            document.getElementById('inp-robusta').value = state.robustaPct;
+            const arabicaPct = 100 - state.robustaPct;
+            document.getElementById('lbl-blend-ratio').textContent = `${arabicaPct}% Арабика / ${state.robustaPct}% Робуста`;
+            document.getElementById('robusta-effect-badge').textContent =
+                state.robustaPct === 0
+                    ? 'Крема: Стандарт Арабики • Тело: Базовое'
+                    : `Тигровая крема: +${Math.round(state.robustaPct * 1.3)}% • Тело: +${Math.round(state.robustaPct * 0.35)}%`;
+
+            const c = getCountry();
+            const r = getRoast();
+            const p = getProcess();
+            const d = getDecaf();
+            const preset = getIdealRecipe();
+
+            document.getElementById('origin-meta-badge').textContent = `${c.notes}`;
+            document.getElementById('roast-meta-badge').textContent = `${r.agtron} • Растворимость ${Math.round(r.solubility * 100)}%`;
+            document.getElementById('process-meta-badge').textContent = `${p.name}: ${p.badge}`;
+            document.getElementById('decaf-meta-badge').textContent = d.id === 'regular' ? 'Обычный кофеин' : `${d.name} (Пористое)`;
+
+            const flagBadgeEl = document.getElementById('advice-country-badge');
+            if (flagBadgeEl) {
+                flagBadgeEl.innerHTML = COUNTRY_FLAGS_SVG[c.id] || '';
+            }
+
+            document.getElementById('advice-heading').textContent =
+                `${c.name} (${r.name}, ${p.name}${d.id !== 'regular' ? ', ' + d.name : ''}${state.robustaPct > 0 ? ', +' + state.robustaPct + '% Робуста' : ''})`;
+            document.getElementById('advice-body').textContent = preset.dynamicAdvice;
+            document.getElementById('advice-pills').innerHTML = `
+                <span class="px-2 py-0.5 rounded bg-coffee-800 border border-coffee-600 text-amber-200">Помол: ${preset.grind.toFixed(1)}</span>
+                <span class="px-2 py-0.5 rounded bg-coffee-800 border border-coffee-600 text-amber-200">RPM: ${FIXED_RPM} (Фикс.)</span>
+                <span class="px-2 py-0.5 rounded bg-coffee-800 border border-coffee-600 text-white">Доза: ${preset.dose.toFixed(1)}г</span>
+                <span class="px-2 py-0.5 rounded bg-coffee-800 border border-coffee-600 text-amber-300">PID: ${preset.temp}°C</span>
+                <span class="px-2 py-0.5 rounded bg-coffee-800 border border-coffee-600 text-emerald-300">OPV: ${preset.opv.toFixed(1)} бар</span>
+                <span class="px-2 py-0.5 rounded bg-coffee-800 border border-coffee-600 text-sky-300">Предсмач: ${FIXED_PREINF}с (Фикс.) + пауза ${preset.pause}с</span>
+                <span class="px-2 py-0.5 rounded bg-coffee-800 border border-coffee-600 text-emerald-300">Время: ${preset.shotTime}с</span>
+                <span class="px-2 py-0.5 rounded bg-coffee-800 border border-coffee-600 text-amber-200">Ratio: 1:${preset.ratio.toFixed(1)} (${preset.targetYield.toFixed(1)}г)</span>
+            `;
+        }
+
+        function selectCountry(id) {
+            state.countryId = id;
+            const c = getCountry();
+            const autoProc = document.getElementById('chk-auto-process');
+            if ((!autoProc || autoProc.checked) && c.defaultProcess) {
+                state.processId = c.defaultProcess;
+            }
+            renderSelectors();
+            updateAll();
+        }
+
+        function selectRoast(id) {
+            state.roastId = id;
+            renderSelectors();
+            updateAll();
+        }
+
+        function selectProcess(id) {
+            state.processId = id;
+            renderSelectors();
+            updateAll();
+        }
+
+        function selectDecaf(id) {
+            state.decafId = id;
+            renderSelectors();
+            updateAll();
+        }
+
+        function setRobusta(pct) {
+            state.robustaPct = Math.max(0, Math.min(100, parseInt(pct, 10) || 0));
+            renderSelectors();
+            updateAll();
+        }
+
+        function setStopMode(mode) {
+            state.stopMode = mode;
+            const btnTime = document.getElementById('mode-btn-time');
+            const btnWeight = document.getElementById('mode-btn-weight');
+            if (mode === 'time') {
+                btnTime.className = 'px-2 py-1 rounded bg-emerald-500 text-coffee-950 transition cursor-pointer';
+                btnWeight.className = 'px-2 py-1 rounded text-coffee-200 hover:text-white transition cursor-pointer';
+            } else {
+                btnWeight.className = 'px-2 py-1 rounded bg-amber-500 text-white transition cursor-pointer';
+                btnTime.className = 'px-2 py-1 rounded text-coffee-200 hover:text-white transition cursor-pointer';
+            }
+            updateAll();
+        }
+
+        function applyPreset() {
+            const ideal = getIdealRecipe();
+            state.grind = ideal.grind;
+            state.rpm = FIXED_RPM;
+            state.dose = ideal.dose;
+            state.temp = ideal.temp;
+            state.opv = ideal.opv;
+            state.preinf = FIXED_PREINF;
+            state.pause = Math.round(ideal.pause);
+            state.shotTime = Math.round(ideal.shotTime);
+            state.ratio = ideal.ratio;
+
+            setStopMode('time');
+            syncControlsUI();
+            updateAll();
+        }
+
+        function stepParam(key, delta) {
+            if (key === 'grind') {
+                const minG = state.zoomGrind ? 5 : 0;
+                const maxG = state.zoomGrind ? 25 : 90;
+                state.grind = Math.max(minG, Math.min(maxG, +(state.grind + delta).toFixed(1)));
+                setStopMode('time');
+            } else if (key === 'dose') {
+                state.dose = Math.max(14, Math.min(22, +(state.dose + delta).toFixed(1)));
+                setStopMode('time');
+            } else if (key === 'temp') {
+                state.temp = Math.max(86, Math.min(98, Math.round(state.temp + delta)));
+                setStopMode('time');
+            } else if (key === 'opv') {
+                state.opv = Math.max(6.0, Math.min(12.0, +(Math.round((state.opv + delta) * 5) / 5).toFixed(1)));
+                setStopMode('time');
+            } else if (key === 'pause') {
+                state.pause = Math.max(0, Math.min(15, Math.round(state.pause + delta)));
+                setStopMode('time');
+            } else if (key === 'shotTime') {
+                state.shotTime = Math.max(12, Math.min(60, Math.round(state.shotTime + delta)));
+                setStopMode('time');
+            } else if (key === 'ratio') {
+                state.ratio = Math.max(1.0, Math.min(3.5, +(state.ratio + delta).toFixed(1)));
+                setStopMode('weight');
+            }
+            syncControlsUI();
+            updateAll();
+        }
+
+        function syncControlsUI() {
+            state.preinf = FIXED_PREINF;
+            state.rpm = FIXED_RPM;
+            state.pause = Math.round(state.pause);
+            state.shotTime = Math.round(state.shotTime);
+
+            document.getElementById('inp-grind').value = state.grind;
+            document.getElementById('lbl-grind').textContent = state.grind.toFixed(1);
+
+            document.getElementById('lbl-rpm').textContent = `${FIXED_RPM} RPM`;
+
+            document.getElementById('inp-dose').value = state.dose;
+            document.getElementById('lbl-dose').textContent = `${state.dose.toFixed(1)} г`;
+
+            document.getElementById('inp-temp').value = state.temp;
+            document.getElementById('lbl-temp').textContent = `${state.temp} °C`;
+
+            document.getElementById('inp-opv').value = state.opv;
+            document.getElementById('lbl-opv').textContent = `${state.opv.toFixed(1)} бар`;
+
+            document.getElementById('lbl-preinf').textContent = `${FIXED_PREINF} с`;
+
+            document.getElementById('inp-pause').value = state.pause;
+            document.getElementById('lbl-pause').textContent = `${state.pause} с`;
+
+            document.getElementById('inp-shottime').value = state.shotTime;
+            document.getElementById('lbl-shottime').textContent = `${state.shotTime} с`;
+
+            document.getElementById('inp-ratio').value = state.ratio;
+            document.getElementById('lbl-ratio').textContent = `1:${state.ratio.toFixed(1)} (${(state.dose * state.ratio).toFixed(1)} г)`;
+        }
+
+        // ==========================================
+        // 4. PHYSICS ENGINE (DF64 Gen 2 @ 1400 RPM + Gemilai 3006 @ 213g/30s & 2s Pre-infusion)
+        // ==========================================
+        function computePhysics() {
+            const c = getCountry();
+            const r = getRoast();
+            const p = getProcess();
+            const d = getDecaf();
+            const preset = getPreset();
+            const robFrac = state.robustaPct / 100.0;
+
+            state.rpm = FIXED_RPM;
+            state.preinf = FIXED_PREINF;
+
+            const maxDebit = PUMP_FREE_DEBIT_30S / 30.0; // 7.10 g/s free water debit of Gemilai 3006 (213g / 30s)
+
+            // 1. DF64 Gen 2 64mm Flat Burrs fixed at 1400 RPM
+            const relRpmFlow = 1.0;
+
+            // 2. PID Water Temperature physics (86°C - 98°C):
+            const roastGasFactor = (r.id === 'dark' ? 1.25 : (r.id === 'medium_dark' ? 1.12 : 1.0)) * (1.0 + robFrac * 0.25);
+            const tempSwellingResistance = Math.max(0.72, 1.0 + (state.temp - 93) * 0.026 * roastGasFactor);
+            const idealTempSwelling = Math.max(0.72, 1.0 + (preset.temp - 93) * 0.026 * roastGasFactor);
+            const tempFlowMultiplier = 1.0 / tempSwellingResistance;
+            const relTempFlow = idealTempSwelling / tempSwellingResistance;
+
+            const tempPct = Math.round((tempFlowMultiplier - 1) * 100);
+            document.getElementById('temp-effect-pill').textContent = `Поток от T°: ${tempPct >= 0 ? '+' : ''}${tempPct}%`;
+
+            // 3. Relative Hydraulic Multipliers (centered smoothly on getIdealRecipe)
+            const grindFlowMult = Math.pow(1.135, state.grind - preset.grind);
+            const doseFlowMult = Math.pow(preset.dose / state.dose, 1.65);
+
+            const rawOpvRatio = Math.pow(state.opv / preset.opv, 0.72);
+            let puckCompPenalty = 1.0;
+            if (state.grind < 8.2 && state.opv > 9.5) {
+                puckCompPenalty = 1.0 - (state.opv - 9.5) * 0.10;
+            }
+            const opvFlowMult = rawOpvRatio * Math.max(0.65, puckCompPenalty);
+
+            const preinfEaseMult = (1.0 + FIXED_PREINF * 0.014 + state.pause * 0.011) /
+                                   (1.0 + FIXED_PREINF * 0.014 + preset.pause * 0.011);
+
+            let chanRisk = 0.04 + (d.id !== 'regular' ? 0.05 : 0);
+            if (state.opv > 9.5) chanRisk += (state.opv - 9.5) * 0.18;
+            if (state.grind < 8.4) chanRisk += (8.4 - state.grind) * 0.18;
+            if (state.grind > 19.5) chanRisk += (state.grind - 19.5) * 0.14;
+            if (state.dose < 15.0) chanRisk += 0.12;
+            chanRisk = Math.max(0.02, Math.min(0.95, chanRisk - state.pause * 0.025));
+
+            const combinedFlowMult = grindFlowMult * doseFlowMult * relRpmFlow * relTempFlow * opvFlowMult * preinfEaseMult;
+
+            const dt = 0.25;
+            function runHydraulicIntegration(flowScale, stopByTime, limitTime, limitWeight) {
+                let t = 0;
+                let w = 0;
+                let peakP = 0;
+                let endP = 0;
+                let pourFlowSum = 0;
+                let pourTicks = 0;
+
+                const times = [0];
+                const weights = [0];
+                const flows = [0];
+                const pressures = [0];
+
+                const preEnd = FIXED_PREINF;
+                const pauseEnd = FIXED_PREINF + state.pause;
+                const dripDelay = Math.max(1.3, 2.45 / Math.pow(Math.max(0.35, combinedFlowMult), 0.45));
+                const firstDropTime = pauseEnd + dripDelay;
+
+                while (stopByTime ? (t < limitTime && w < state.dose * 6.0) : (w < limitWeight && t < 60.0)) {
+                    t = +(t + dt).toFixed(2);
+
+                    let pBar = 0;
+                    if (t <= preEnd) {
+                        const preProg = t / preEnd;
+                        pBar = Math.min(state.opv, 2.4 * Math.pow(preProg, 1.15));
+                    } else if (t > preEnd && t <= pauseEnd && state.pause > 0) {
+                        pBar = Math.max(0.45, 2.2 * Math.exp(-(t - preEnd) / 2.4));
+                    } else {
+                        const tPour = Math.max(0.1, t - pauseEnd);
+                        const basePressure = state.pause > 0 ? 0.65 : 2.1;
+                        const vibroRampTime = Math.max(1.85, 2.75 / Math.pow(Math.max(0.4, 1.0 / grindFlowMult), 0.22));
+                        const ramp = 1.0 - Math.exp(-Math.pow(tPour / vibroRampTime, 1.45));
+
+                        const maxAchievableP = Math.min(
+                            state.opv,
+                            Math.max(1.4, state.opv * Math.pow(1.0 / Math.max(0.25, grindFlowMult), 0.58))
+                        );
+
+                        const extractedSolidsFrac = Math.min(1.35, w / Math.max(12.0, state.dose * 2.0));
+                        const pourAfterPeak = Math.max(0, t - (firstDropTime + 2.2));
+                        const timeErosion = 1.0 - Math.exp(-pourAfterPeak / 9.0);
+
+                        const chokeHoldFactor = state.grind < 8.0 ? 0.45 : 1.0;
+                        const roastErosionMod = (0.92 + (r.solubility - 0.85) * 0.45) * d.erosionBoost;
+                        const channelDropBoost = 1.0 + chanRisk * 0.65;
+
+                        const erosionDropFraction = Math.min(
+                            0.42,
+                            (0.115 * extractedSolidsFrac + 0.085 * timeErosion) * chokeHoldFactor * roastErosionMod * channelDropBoost
+                        );
+
+                        const vibroRipple = ramp > 0.65 ? (Math.sin(t * 7.5) * 0.06 + Math.cos(t * 13.0) * 0.03) : 0;
+
+                        const rawPressure = basePressure + (maxAchievableP - basePressure) * ramp;
+                        pBar = Math.max(0.8, rawPressure * (1.0 - erosionDropFraction * Math.pow(ramp, 2)) + vibroRipple);
+                        pBar = Math.min(state.opv, pBar);
+                    }
+                    if (pBar > peakP) peakP = pBar;
+                    endP = pBar;
+
+                    let flow = 0;
+                    if (t <= preEnd) {
+                        flow = 0;
+                    } else if (t > preEnd && t <= pauseEnd) {
+                        flow = 0;
+                    } else if (t < firstDropTime) {
+                        const warmProg = Math.max(0, (t - pauseEnd) / Math.max(0.25, dripDelay));
+                        flow = flowScale * 0.18 * Math.pow(warmProg, 2);
+                    } else {
+                        const pourElapsed = t - firstDropTime;
+                        const erosionBoost = 1.0 + Math.min(0.45, pourElapsed * 0.015 * d.erosionBoost);
+                        const channelSurge = chanRisk > 0.32 ? (1.0 + (chanRisk - 0.30) * 0.38) : 1.0;
+                        const pumpCeiling = maxDebit * (1.0 - (pBar / 15.0) * 0.35);
+                        flow = Math.min(pumpCeiling, flowScale * erosionBoost * channelSurge);
+                        pourFlowSum += flow;
+                        pourTicks++;
+                    }
+
+                    w = stopByTime ? (w + flow * dt) : Math.min(limitWeight, w + flow * dt);
+
+                    times.push(t);
+                    weights.push(+w.toFixed(2));
+                    flows.push(+flow.toFixed(2));
+                    pressures.push(+pBar.toFixed(2));
+                }
+
+                return { times, weights, flows, pressures, totalTime: Math.round(t), finalWeight: w, peakP, endP, pourFlowSum, pourTicks, preEnd, pauseEnd };
+            }
+
+            const idealActivePour = Math.max(5.0, preset.shotTime - FIXED_PREINF - preset.pause);
+            const baseFlowAtPreset = preset.targetYield / (idealActivePour - 1.55);
+            const activeFlowScale = baseFlowAtPreset * combinedFlowMult;
+
+            const targetWeight = +(state.dose * state.ratio).toFixed(1);
+            let simRun = runHydraulicIntegration(
+                activeFlowScale,
+                state.stopMode === 'time',
+                state.shotTime,
+                targetWeight
+            );
+
+            if (state.stopMode === 'time') {
+                const timeRatio = Math.max(2.0, state.shotTime - FIXED_PREINF - state.pause) /
+                                  Math.max(2.0, preset.shotTime - FIXED_PREINF - preset.pause);
+                const expectedPhysicalYield = Math.max(0.5, +(preset.targetYield * timeRatio * combinedFlowMult).toFixed(1));
+                if (simRun.finalWeight > 0.1) {
+                    const exactScale = activeFlowScale * (expectedPhysicalYield / simRun.finalWeight);
+                    simRun = runHydraulicIntegration(exactScale, true, state.shotTime, targetWeight);
+                }
+            }
+
+            const { times, weights, flows, pressures, totalTime, peakP, endP, pourFlowSum, pourTicks, preEnd, pauseEnd } = simRun;
+            const finalWeight = Math.max(0.5, +(weights[weights.length - 1] || 0.5).toFixed(1));
+            const actualRatio = +(finalWeight / state.dose).toFixed(2);
+            const avgFlow = pourTicks > 0 ? (pourFlowSum / pourTicks) : (finalWeight / Math.max(4, totalTime - state.pause));
+
+            document.getElementById('opv-effect-pill').textContent = `Пик ${peakP.toFixed(1)} → ${endP.toFixed(1)} бар`;
+
+            if (state.stopMode === 'time') {
+                state.ratio = Math.max(1.0, Math.min(3.5, +actualRatio.toFixed(1)));
+                document.getElementById('inp-ratio').value = state.ratio;
+                document.getElementById('lbl-ratio').textContent = `1:${actualRatio.toFixed(1)} (${finalWeight.toFixed(1)} г)`;
+            } else {
+                state.shotTime = Math.max(12, Math.min(60, Math.round(totalTime)));
+                document.getElementById('inp-shottime').value = state.shotTime;
+                document.getElementById('lbl-shottime').textContent = `${state.shotTime} с`;
+                document.getElementById('lbl-ratio').textContent = `1:${actualRatio.toFixed(1)} (${finalWeight.toFixed(1)} г)`;
+            }
+            const activePourInt = Math.max(0, Math.round(totalTime - FIXED_PREINF - state.pause));
+            document.getElementById('lbl-active-pour').textContent = `Активный пролив: ${activePourInt} с`;
+
+            // Extraction Yield (EY%) & TDS%
+            const surfFactor = Math.pow(preset.grind / Math.max(4.0, state.grind), 0.52);
+            const idealContact = Math.max(3, preset.shotTime - preset.pause - FIXED_PREINF * 0.35);
+            const contactTime = Math.max(3, totalTime - state.pause - FIXED_PREINF * 0.35);
+            const timeFactor = Math.pow(Math.min(60, contactTime) / idealContact, 0.36);
+            const tempExtractBoost = 1.0 + (state.temp - preset.temp) * 0.026;
+            const ratioFactor = Math.pow(Math.max(0.25, actualRatio) / preset.ratio, 0.34);
+            const bloomBonus = (1.0 + FIXED_PREINF * 0.01 + Math.min(10, state.pause) * 0.013) /
+                               (1.0 + FIXED_PREINF * 0.01 + Math.min(10, preset.pause) * 0.013);
+
+            let ey = (20.1 + robFrac * 0.6) * surfFactor * timeFactor * tempExtractBoost * ratioFactor * bloomBonus * (1.0 - Math.max(0, chanRisk - 0.05) * 0.22);
+            if (finalWeight < 8.0) ey *= (finalWeight / 8.0) * 0.75;
+            ey = Math.max(6.0, Math.min(27.5, ey));
+
+            let tds = (state.dose * ey) / Math.max(4.0, finalWeight);
+            tds = Math.max(2.5, Math.min(16.5, tds));
+
+            const isChoked = state.grind < 7.8 || avgFlow < 0.58 || finalWeight < 14.0 || (state.stopMode === 'weight' && totalTime >= 54);
+            const isGusher = state.grind > 20.0 || avgFlow > 2.65 || peakP < Math.min(5.2, state.opv - 2.0);
+            const isTempHigh = (state.temp - preset.temp) >= 4 || (r.id === 'dark' && state.temp >= 93) || (robFrac >= 0.5 && state.temp >= 93);
+            const isTempLow = (preset.temp - state.temp) >= 4 || (r.id === 'light' && robFrac === 0 && state.temp <= 89);
+            const isChanneling = chanRisk >= 0.38;
+
+            const optTimeCenter = Math.round(24 + FIXED_PREINF + state.pause);
+            const optTimeMin = Math.max(18, optTimeCenter - 4);
+            const optTimeMax = optTimeCenter + 4;
+            const optWeightCenter = state.dose * preset.ratio;
+            const optWeightMin = Math.max(16, optWeightCenter - 4.5);
+            const optWeightMax = optWeightCenter + 4.5;
+
+            const optEYMin = 18.5, optEYMax = 21.6;
+            const optTDSMin = 7.8, optTDSMax = 12.2;
+
+            const under = Math.max(0, 19.0 - ey);
+            const over = Math.max(0, ey - 21.2);
+
+            let acid = c.baseAcid + r.acidMod + p.acidMod + d.acidMod - robFrac * 36 + under * 7.0 - over * 4.2 - (state.temp - preset.temp) * 2.0;
+            if (isGusher) acid = Math.max(acid, 86);
+            acid = Math.round(Math.max(8, Math.min(99, acid)));
+
+            let sweet = c.baseSweet + p.sweetMod + d.sweetMod - robFrac * 10 - Math.abs(ey - 20.1) * 8.5 - chanRisk * 36 + Math.min(6, state.pause * 0.9);
+            if (isChoked || isGusher) sweet -= 30;
+            if (isTempHigh || isTempLow) sweet -= 16;
+            sweet = Math.round(Math.max(12, Math.min(98, sweet)));
+
+            let bitter = 24 + r.bitterMod + p.bitterMod + d.bitterMod + robFrac * 28 + over * 12.0 + Math.max(0, (state.temp - preset.temp) * 4.5) + chanRisk * 32;
+            if (isChoked) bitter = Math.max(bitter, 85);
+            if (isTempHigh) bitter += 20;
+            bitter = Math.round(Math.max(8, Math.min(99, bitter)));
+
+            let body = c.baseBody + r.bodyMod + p.bodyMod + d.bodyMod + robFrac * 24 + (tds - 9.5) * 7.5 - ((FIXED_RPM - 1200) / 100) * 1.2;
+            if (isGusher) body = Math.min(body, 30);
+            body = Math.round(Math.max(15, Math.min(99, body)));
+
+            let score = Math.round(sweet * 0.45 + (100 - Math.abs(ey - 20.1) * 9.5) * 0.35 + (100 - chanRisk * 70) * 0.20);
+            if (isChoked || isGusher) score = Math.min(score, 42);
+            else if (isTempHigh || isTempLow) score = Math.min(score, 62);
+            score = Math.max(18, Math.min(99, score));
+
+            return {
+                times, weights, flows, pressures,
+                totalTime, finalWeight, actualRatio, peakP, endP, avgFlow, ey, tds, chanRisk,
+                preEnd, pauseEnd,
+                flags: { isChoked, isGusher, isTempHigh, isTempLow, isChanneling },
+                opt: { optTimeMin, optTimeMax, optWeightMin, optWeightMax, optEYMin, optEYMax, optTDSMin, optTDSMax },
+                taste: { acid, sweet, bitter, body, score },
+                preset
+            };
+        }
+
+        // ==========================================
+        // 5. UPDATE TELEMETRY, CHARTS, BASKET & RECIPES
+        // ==========================================
+        function updateAll() {
+            const sim = computePhysics();
+
+            state.trail.push({ ey: sim.ey, tds: sim.tds });
+            if (state.trail.length > 10) state.trail.shift();
+
+            document.getElementById('kpi-yield').textContent = `${sim.finalWeight.toFixed(1)} г`;
+            document.getElementById('kpi-ratio').textContent = `Brew Ratio 1:${sim.actualRatio.toFixed(2)}`;
+            document.getElementById('kpi-time').textContent = `${Math.round(sim.totalTime)} с • ${sim.taste.score}/100`;
+
+            const tStatus = document.getElementById('kpi-time-status');
+            if (sim.flags.isChoked) {
+                tStatus.textContent = 'ЗАТЫК ГРУППЫ!';
+                tStatus.className = 'text-[11px] font-mono text-red-400 font-bold';
+            } else if (sim.flags.isGusher) {
+                tStatus.textContent = 'Водопад (Быстро)';
+                tStatus.className = 'text-[11px] font-mono text-amber-300 font-bold';
+            } else {
+                tStatus.textContent = `Окно ${Math.round(sim.opt.optTimeMin)}–${Math.round(sim.opt.optTimeMax)} с`;
+                tStatus.className = 'text-[11px] font-mono text-emerald-400';
+            }
+
+            document.getElementById('kpi-pressure').textContent = `${sim.peakP.toFixed(1)} → ${sim.endP.toFixed(1)} бар`;
+            document.getElementById('kpi-flow').textContent = `Поток: ${sim.avgFlow.toFixed(2)} г/с`;
+            document.getElementById('kpi-ey').textContent = `${sim.ey.toFixed(1)}%`;
+            document.getElementById('kpi-tds').textContent = `TDS: ${sim.tds.toFixed(2)}%`;
+
+            document.getElementById('chart1-subtitle').textContent =
+                `Плавающая точка шота: ${Math.round(sim.totalTime)} с • ${sim.finalWeight.toFixed(1)} г • Предсмачивание фикс. ${FIXED_PREINF} с • Давление: пик ${sim.peakP.toFixed(1)} → финал ${sim.endP.toFixed(1)} бар`;
+
+            document.getElementById('lbl-acid').textContent = `${sim.taste.acid}%`;
+            document.getElementById('bar-acid').style.width = `${sim.taste.acid}%`;
+            document.getElementById('lbl-sweet').textContent = `${sim.taste.sweet}%`;
+            document.getElementById('bar-sweet').style.width = `${sim.taste.sweet}%`;
+            document.getElementById('lbl-bitter').textContent = `${sim.taste.bitter}%`;
+            document.getElementById('bar-bitter').style.width = `${sim.taste.bitter}%`;
+            document.getElementById('lbl-body').textContent = `${sim.taste.body}%`;
+            document.getElementById('bar-body').style.width = `${sim.taste.body}%`;
+            document.getElementById('lbl-balance').textContent = `${sim.taste.score}%`;
+            document.getElementById('bar-balance').style.width = `${sim.taste.score}%`;
+
+            document.getElementById('verdict-score-badge').textContent = `Оценка шота: ${sim.taste.score}/100`;
+
+            updateBasketSVG(sim);
+            updateVerdictCard(sim);
+            drawDynamicsChart(sim);
+            drawControlMap(sim);
+            renderBeverageRecipes(sim);
+        }
+
+        function updateBasketSVG(sim) {
+            const { isChoked, isGusher, isChanneling } = sim.flags;
+            const puckH = Math.round(36 + ((state.dose - 14) / 8) * 18 + Math.min(4, state.pause * 0.25));
+            const puckY = 90 - puckH;
+
+            const puckEl = document.getElementById('svg-puck');
+            puckEl.setAttribute('y', puckY);
+            puckEl.setAttribute('height', puckH);
+            puckEl.setAttribute('fill', isChoked ? 'url(#gradPuckChoked)' : 'url(#gradPuckNormal)');
+
+            document.getElementById('svg-puckscreen').setAttribute('y', puckY - 4);
+            document.getElementById('svg-puck-text').setAttribute('y', puckY + Math.round(puckH / 2) + 3);
+            document.getElementById('svg-puck-text').textContent = `${state.dose.toFixed(1)}г | ${sim.peakP.toFixed(1)}→${sim.endP.toFixed(1)}Б`;
+
+            const streamGroup = document.getElementById('svg-stream-group');
+            const cone = document.getElementById('svg-cone');
+            const tail = document.getElementById('svg-tail');
+            const drips = document.getElementById('svg-drips');
+            const cracks = document.getElementById('svg-cracks');
+            const sprays = document.getElementById('svg-sprays');
+            const badge = document.getElementById('basket-status-badge');
+            const note = document.getElementById('basket-footer-note');
+
+            if (isChoked) {
+                streamGroup.setAttribute('opacity', '0.12');
+                drips.setAttribute('opacity', '1');
+                cracks.setAttribute('opacity', '0.6');
+                sprays.setAttribute('opacity', '0');
+                badge.textContent = '🚨 ЗАТЫК (КАПЛИ)';
+                badge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/40 font-bold';
+                note.textContent = `Затык группы 58мм! Поток упал до ${sim.avgFlow.toFixed(2)} г/с. Укрупните помол на DF64 Gen 2.`;
+            } else if (isGusher) {
+                streamGroup.setAttribute('opacity', '1');
+                drips.setAttribute('opacity', '0');
+                tail.setAttribute('x', '148');
+                tail.setAttribute('width', '24');
+                tail.setAttribute('fill', 'url(#gradGusher)');
+                cone.setAttribute('fill', 'url(#gradGusher)');
+                cracks.setAttribute('opacity', '1');
+                sprays.setAttribute('opacity', '1');
+                badge.textContent = '🌊 ВОДОПАД / ПРОБОЙ';
+                badge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 font-bold';
+                note.textContent = `Водопад (${sim.avgFlow.toFixed(2)} г/с)! Таблетка не держит давление (${sim.peakP.toFixed(1)} бар). Уменьшите помол!`;
+            } else if (isChanneling) {
+                streamGroup.setAttribute('opacity', '0.95');
+                drips.setAttribute('opacity', '0');
+                tail.setAttribute('x', '154');
+                tail.setAttribute('width', '12');
+                tail.setAttribute('fill', 'url(#gradCone)');
+                cone.setAttribute('fill', 'url(#gradCone)');
+                cracks.setAttribute('opacity', '1');
+                sprays.setAttribute('opacity', '1');
+                badge.textContent = '⚠️ КАНАЛЫ И БРЫЗГИ';
+                badge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/40 font-bold';
+                note.textContent = `Пробои таблетки (${Math.round(sim.chanRisk * 100)}%) и брызги! Снизьте OPV до 8.6–9.0 бар и добавьте паузу.`;
+            } else {
+                streamGroup.setAttribute('opacity', '0.95');
+                drips.setAttribute('opacity', '0');
+                const tailW = Math.round(10 + (state.robustaPct / 100) * 4);
+                tail.setAttribute('x', String(160 - Math.round(tailW / 2)));
+                tail.setAttribute('width', String(tailW));
+                tail.setAttribute('fill', 'url(#gradCone)');
+                cone.setAttribute('fill', 'url(#gradCone)');
+                cracks.setAttribute('opacity', '0');
+                sprays.setAttribute('opacity', '0');
+                badge.textContent = state.robustaPct >= 20 ? '🐯 Густой тигровый конус' : '✅ Мышиный хвостик';
+                badge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold';
+                note.textContent = `Таблетка 58 мм стабильна, давление помпы Gemilai 3006 плавно снизилось ${sim.peakP.toFixed(1)}→${sim.endP.toFixed(1)} бар.`;
+            }
+
+            const fillH = Math.max(6, Math.min(48, Math.round((sim.finalWeight / 55) * 48)));
+            const liqY = 206 - fillH;
+            const cremaH = Math.round(5 + (state.robustaPct / 100) * 8 + (state.roastId === 'dark' ? 3 : 0));
+            document.getElementById('svg-liquid').setAttribute('y', liqY);
+            document.getElementById('svg-liquid').setAttribute('height', fillH);
+            document.getElementById('svg-crema').setAttribute('y', liqY - cremaH + 1);
+            document.getElementById('svg-crema').setAttribute('height', cremaH);
+            document.getElementById('svg-cup-lbl').textContent = `${sim.finalWeight.toFixed(1)} г`;
+        }
+
+        function updateVerdictCard(sim) {
+            const { isChoked, isGusher, isTempHigh, isTempLow, isChanneling } = sim.flags;
+            const pr = sim.preset;
+            const card = document.getElementById('verdict-card');
+            const title = document.getElementById('verdict-title');
+            const desc = document.getElementById('verdict-desc');
+            const fix = document.getElementById('verdict-fix');
+
+            if (isChoked) {
+                card.className = 'rounded-xl p-3.5 bg-red-950/50 border border-red-500/60 space-y-1';
+                title.className = 'text-xs font-bold uppercase text-red-400';
+                title.textContent = '🚨 КРИТИЧЕСКАЯ ОШИБКА: ЗАТЫК ГРУППЫ (CHOKING)';
+                desc.textContent = `Слишком мелкий помол (${state.grind.toFixed(1)}) при фиксированных ${FIXED_RPM} RPM или перегретая таблетка заперли корзину 58 мм на Gemilai 3006. Скорость потока упала до ${sim.avgFlow.toFixed(2)} г/с, выход всего ${sim.finalWeight.toFixed(1)} г. Во вкусе — резкая горечь и вяжущая сухость.`;
+                fix.textContent = `→ РЕШЕНИЕ: Укрупните помол на DF64 Gen 2 до ${pr.grind.toFixed(1)} или уменьшите дозу кофе.`;
+            } else if (isGusher) {
+                card.className = 'rounded-xl p-3.5 bg-amber-950/60 border border-amber-500/60 space-y-1';
+                title.className = 'text-xs font-bold uppercase text-amber-300';
+                title.textContent = '🌊 ОШИБКА: ВОДОПАД (GUSHER) И ПРОБОЙ ТАБЛЕТКИ';
+                desc.textContent = `Помол слишком крупный (${state.grind.toFixed(1)})! Вода пролетает сквозь таблетку со скоростью ${sim.avgFlow.toFixed(2)} г/с, давление помпы Gemilai 3006 не поднимается выше ${sim.peakP.toFixed(1)} бар. Напиток пустой, водянистый и резко кислый.`;
+                fix.textContent = `→ РЕШЕНИЕ: Уменьшите помол на DF64 Gen 2 до ${pr.grind.toFixed(1)} (при фиксированных ${FIXED_RPM} RPM).`;
+            } else if (isTempHigh) {
+                card.className = 'rounded-xl p-3.5 bg-orange-950/50 border border-orange-500/60 space-y-1';
+                title.className = 'text-xs font-bold uppercase text-orange-400';
+                title.textContent = `🔥 ТЕМПЕРАТУРНЫЙ ПЕРЕЖОГ И ГАЗОВЫЙ ПОДПОР (${state.temp} °C)`;
+                desc.textContent = `Температура ${state.temp} °C слишком высока для выбранной конфигурации (особенно с учетом обжарки/робусты/декафа)! Таблетка разбухает и выделяет CO₂ (замедляя поток), а в чашку вымывается резкая горечь (${sim.taste.bitter}%).`;
+                fix.textContent = `→ РЕШЕНИЕ: Снизьте температуру PID на Gemilai 3006 до ${pr.temp} °C.`;
+            } else if (isTempLow) {
+                card.className = 'rounded-xl p-3.5 bg-sky-950/50 border border-sky-500/60 space-y-1';
+                title.className = 'text-xs font-bold uppercase text-sky-400';
+                title.textContent = `❄️ ХОЛОДНАЯ ЭКСТРАКЦИЯ (${state.temp} °C)`;
+                desc.textContent = `Вода ${state.temp} °C слишком холодная для этого зерна: таблетка слабо набухает (поток ускоряется), сахара не растворяются, во вкусе доминирует резкая кислота (${sim.taste.acid}%).`;
+                fix.textContent = `→ РЕШЕНИЕ: Поднимите температуру PID на Gemilai 3006 до ${pr.temp} °C.`;
+            } else if (isChanneling) {
+                card.className = 'rounded-xl p-3.5 bg-orange-950/40 border border-orange-500/50 space-y-1';
+                title.className = 'text-xs font-bold uppercase text-orange-400';
+                title.textContent = `⚠️ КАНАЛООБРАЗОВАНИЕ В ТАБЛЕТКЕ (${Math.round(sim.chanRisk * 100)}%)`;
+                desc.textContent = `Высокое давление OPV (${state.opv.toFixed(1)} бар) или нехватка паузы блуминга пробивают каналы в 58-мм корзине.`;
+                fix.textContent = `→ РЕШЕНИЕ: Снизьте клапан OPV до ${pr.opv.toFixed(1)} бар и выставьте паузу предсмачивания ${pr.pause} с (после фиксированной подачи ${FIXED_PREINF} с).`;
+            } else if (sim.ey < 18.4) {
+                card.className = 'rounded-xl p-3.5 bg-amber-950/40 border border-amber-500/45 space-y-1';
+                title.className = 'text-xs font-bold uppercase text-amber-300';
+                title.textContent = `📉 НЕДОЭКСТРАКЦИЯ (EY ${sim.ey.toFixed(1)}% < 18.5%)`;
+                desc.textContent = `Шот остановлен слишком рано (${sim.finalWeight.toFixed(1)} г за ${Math.round(sim.totalTime)} с) или помол крупноват. Кислотность преобладает над сладостью.`;
+                fix.textContent = `→ РЕШЕНИЕ: Увеличьте время пролива до ${pr.shotTime} с (выход 1:${pr.ratio.toFixed(1)}) или уменьшите помол на DF64 Gen 2 на 0.5 деления.`;
+            } else if (sim.ey > 21.7) {
+                card.className = 'rounded-xl p-3.5 bg-orange-950/30 border border-orange-500/40 space-y-1';
+                title.className = 'text-xs font-bold uppercase text-orange-400';
+                title.textContent = `📈 ПЕРЕЭКСТРАКЦИЯ (EY ${sim.ey.toFixed(1)}% > 21.6%)`;
+                desc.textContent = `Пролив затянут (${Math.round(sim.totalTime)} с, ${sim.finalWeight.toFixed(1)} г). Во вкусе появляется сухость и древесная горчинка.`;
+                fix.textContent = `→ РЕШЕНИЕ: Сократите время пролива на 2–3 с или укрупните помол на +0.5 деления.`;
+            } else {
+                card.className = 'rounded-xl p-3.5 bg-emerald-950/30 border border-emerald-500/40 space-y-1';
+                title.className = 'text-xs font-bold uppercase text-emerald-400';
+                title.textContent = `✅ ИДЕАЛЬНЫЙ БАЛАНС ЭКСТРАКЦИИ (SWEET SPOT)`;
+                desc.textContent = `Ваша плавающая точка находится внутри оптимальной зоны! На Gemilai 3006 (${state.temp}°C, предсмачивание ${FIXED_PREINF} с + пауза ${state.pause} с, давление ${sim.peakP.toFixed(1)} → ${sim.endP.toFixed(1)} бар, время ${Math.round(sim.totalTime)} с) и DF64 Gen 2 (помол ${state.grind.toFixed(1)}, фикс. ${FIXED_RPM} RPM) получен сбалансированный эспрессо (${sim.taste.sweet}% сладости, EY ${sim.ey.toFixed(1)}%).`;
+                fix.textContent = `✓ Настройки оптимальны. Ниже рассчитаны 12 популярных рецептов (включая Раф, Кортадо, Бамбл и Аэрокано) на базе ваших ${sim.finalWeight.toFixed(1)} г эспрессо.`;
+            }
+        }
+
+        // ==========================================
+        // 6. CANVAS CHARTS (ROSE THEME COLORS)
+        // ==========================================
+        function drawDynamicsChart(sim) {
+            const canvas = document.getElementById('chart-dynamics');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const w = Math.max(300, rect.width - 16);
+            const h = 250;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, w, h);
+
+            const pad = { top: 18, right: 36, bottom: 24, left: 36 };
+            const pw = w - pad.left - pad.right;
+            const ph = h - pad.top - pad.bottom;
+
+            const maxT = Math.max(40, Math.ceil(Math.max(sim.totalTime, sim.opt.optTimeMax + 4) / 5) * 5);
+            const maxW = Math.max(50, Math.ceil(Math.max(sim.finalWeight, sim.opt.optWeightMax + 6) / 10) * 10);
+            const maxP = 12;
+
+            const toX = t => pad.left + (t / maxT) * pw;
+            const toYW = weight => pad.top + ph - (weight / maxW) * ph;
+            const toYP = p => pad.top + ph - (p / maxP) * ph;
+
+            ctx.strokeStyle = 'rgba(244, 114, 182, 0.18)';
+            ctx.lineWidth = 1;
+            ctx.font = '10px JetBrains Mono';
+            for (let i = 0; i <= 4; i++) {
+                const y = pad.top + (ph / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(pad.left, y);
+                ctx.lineTo(pad.left + pw, y);
+                ctx.stroke();
+
+                ctx.fillStyle = '#fda4af';
+                ctx.textAlign = 'right';
+                ctx.fillText(`${Math.round(maxW * (1 - i / 4))}г`, pad.left - 4, y + 3);
+
+                ctx.fillStyle = '#34d399';
+                ctx.textAlign = 'left';
+                ctx.fillText(`${Math.round(maxP * (1 - i / 4))}б`, pad.left + pw + 4, y + 3);
+            }
+
+            for (let i = 0; i <= 5; i++) {
+                const x = pad.left + (pw / 5) * i;
+                ctx.fillStyle = '#f5cce2';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${Math.round((maxT / 5) * i)}с`, x, h - 6);
+            }
+
+            if (sim.preEnd > 0) {
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+                ctx.fillRect(pad.left, pad.top, toX(sim.preEnd) - pad.left, ph);
+            }
+            if (state.pause > 0) {
+                const sx = toX(sim.preEnd);
+                const ex = toX(sim.pauseEnd);
+                ctx.fillStyle = 'rgba(244, 63, 94, 0.16)';
+                ctx.fillRect(sx, pad.top, ex - sx, ph);
+                ctx.fillStyle = '#fda4af';
+                ctx.font = 'bold 9px JetBrains Mono';
+                ctx.textAlign = 'center';
+                if (ex - sx > 24) ctx.fillText('ПАУЗА', (sx + ex) / 2, pad.top + 12);
+            }
+
+            const ox1 = toX(sim.opt.optTimeMin);
+            const ox2 = toX(sim.opt.optTimeMax);
+            const oy1 = toYW(sim.opt.optWeightMax);
+            const oy2 = toYW(sim.opt.optWeightMin);
+
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+            ctx.fillRect(ox1, oy1, Math.max(12, ox2 - ox1), Math.max(12, oy2 - oy1));
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(ox1, oy1, Math.max(12, ox2 - ox1), Math.max(12, oy2 - oy1));
+            ctx.fillStyle = '#6ee7b7';
+            ctx.font = 'bold 9px JetBrains Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText('ОПТИМАЛЬНАЯ ЗОНА', (ox1 + ox2) / 2, Math.max(pad.top + 10, oy1 - 4));
+
+            const drawLine = (arr, mapY, color) => {
+                if (arr.length < 2) return;
+                ctx.beginPath();
+                arr.forEach((v, i) => {
+                    const x = toX(sim.times[i]);
+                    const y = mapY(v);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.2;
+                ctx.stroke();
+            };
+
+            drawLine(sim.pressures, toYP, '#10b981');
+            drawLine(sim.flows.map(f => f * 2.2), toYP, '#38bdf8');
+            drawLine(sim.weights, toYW, '#fb7185');
+
+            const lastIdx = sim.times.length - 1;
+            const fx = toX(Math.min(maxT, sim.times[lastIdx]));
+            const fy = toYW(Math.min(maxW, sim.finalWeight));
+            const inOpt = !sim.flags.isChoked && !sim.flags.isGusher &&
+                          sim.totalTime >= sim.opt.optTimeMin && sim.totalTime <= sim.opt.optTimeMax &&
+                          sim.finalWeight >= sim.opt.optWeightMin && sim.finalWeight <= sim.opt.optWeightMax;
+
+            ctx.beginPath();
+            ctx.arc(fx, fy, 10, 0, Math.PI * 2);
+            ctx.fillStyle = inOpt ? 'rgba(16, 185, 129, 0.35)' : 'rgba(244, 63, 94, 0.35)';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(fx, fy, 5.5, 0, Math.PI * 2);
+            ctx.fillStyle = inOpt ? '#10b981' : (sim.flags.isChoked || sim.flags.isGusher ? '#ef4444' : '#f43f5e');
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+        }
+
+        function drawControlMap(sim) {
+            const canvas = document.getElementById('chart-map');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const w = Math.max(240, rect.width - 16);
+            const h = 250;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, w, h);
+
+            const pad = { top: 16, right: 16, bottom: 22, left: 34 };
+            const pw = w - pad.left - pad.right;
+            const ph = h - pad.top - pad.bottom;
+
+            const minEY = 10, maxEY = 27;
+            const minTDS = 4, maxTDS = 16;
+            const toX = ey => pad.left + ((ey - minEY) / (maxEY - minEY)) * pw;
+            const toY = tds => pad.top + ph - ((tds - minTDS) / (maxTDS - minTDS)) * ph;
+
+            ctx.strokeStyle = 'rgba(244, 114, 182, 0.18)';
+            ctx.font = '10px JetBrains Mono';
+            for (let e = 12; e <= 26; e += 4) {
+                const x = toX(e);
+                ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + ph); ctx.stroke();
+                ctx.fillStyle = '#f5cce2'; ctx.textAlign = 'center';
+                ctx.fillText(`${e}%`, x, h - 5);
+            }
+            for (let td = 6; td <= 14; td += 2) {
+                const y = toY(td);
+                ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + pw, y); ctx.stroke();
+                ctx.fillStyle = '#f5cce2'; ctx.textAlign = 'right';
+                ctx.fillText(`${td}%`, pad.left - 4, y + 3);
+            }
+
+            const bx1 = toX(sim.opt.optEYMin);
+            const bx2 = toX(sim.opt.optEYMax);
+            const by1 = toY(sim.opt.optTDSMax);
+            const by2 = toY(sim.opt.optTDSMin);
+
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+            ctx.fillRect(bx1, by1, bx2 - bx1, by2 - by1);
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 1.6;
+            ctx.strokeRect(bx1, by1, bx2 - bx1, by2 - by1);
+
+            ctx.fillStyle = '#6ee7b7';
+            ctx.font = 'bold 9px JetBrains Mono';
+            ctx.textAlign = 'center';
+            ctx.fillText('ОПТИМАЛЬНАЯ ЗОНА', (bx1 + bx2) / 2, Math.max(pad.top + 10, by1 - 4));
+
+            state.trail.forEach((pt, idx) => {
+                const tx = toX(Math.max(minEY, Math.min(maxEY, pt.ey)));
+                const ty = toY(Math.max(minTDS, Math.min(maxTDS, pt.tds)));
+                ctx.beginPath();
+                ctx.arc(tx, ty, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(251, 113, 133, ${(idx + 1) / state.trail.length * 0.45})`;
+                ctx.fill();
+            });
+
+            const px = toX(Math.max(minEY, Math.min(maxEY, sim.ey)));
+            const py = toY(Math.max(minTDS, Math.min(maxTDS, sim.tds)));
+            const inZone = !sim.flags.isChoked && !sim.flags.isGusher &&
+                           sim.ey >= sim.opt.optEYMin && sim.ey <= sim.opt.optEYMax &&
+                           sim.tds >= sim.opt.optTDSMin && sim.tds <= sim.opt.optTDSMax;
+
+            const badge = document.getElementById('map-zone-badge');
+            if (inZone) {
+                badge.textContent = '● В оптимальной зоне';
+                badge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold';
+            } else {
+                badge.textContent = '○ Вне оптимальной зоны';
+                badge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/35 font-bold';
+            }
+
+            // Crosshairs on floating point
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(px, pad.top);
+            ctx.lineTo(px, pad.top + ph);
+            ctx.moveTo(pad.left, py);
+            ctx.lineTo(pad.left + pw, py);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.beginPath();
+            ctx.arc(px, py, 10, 0, Math.PI * 2);
+            ctx.fillStyle = inZone ? 'rgba(16, 185, 129, 0.32)' : 'rgba(244, 63, 94, 0.32)';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+            ctx.fillStyle = inZone ? '#10b981' : '#f43f5e';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+        }
+
+        // ==========================================
+        // 7. EXPANDED MILK/CREAM (6) & NON-MILK (6) BEVERAGE CALCULATORS
+        // ==========================================
+        function renderBeverageRecipes(sim) {
+            const c = getCountry();
+            const esp = Math.max(10, +sim.finalWeight.toFixed(1));
+            document.getElementById('milk-shot-info').textContent = `${esp} г эспрессо (TDS ${sim.tds.toFixed(1)}%, EY ${sim.ey.toFixed(1)}%)`;
+
+            const rafCream = Math.round(esp * 3.8);
+            const rafVanillaSugar = Math.max(8, Math.min(12, Math.round(esp * 0.28)));
+
+            const milkList = [
+                {
+                    name: 'Классический Раф (Raf Coffee)',
+                    badge: 'Хит кофейни • Сливки 10%',
+                    rows: [
+                        { k: 'Эспрессо:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Сливки 10–11%:', v: `${rafCream} г (мл)`, cls: 'text-white font-bold' },
+                        { k: 'Ванильный сахар:', v: `${rafVanillaSugar} г (1.5 ч.л.)`, cls: 'text-amber-200 font-bold' },
+                        { k: 'Взбивание паром:', v: 'Всё вместе до 64–66 °C', cls: 'text-emerald-400' }
+                    ],
+                    note: `В питчер влейте ${rafCream} г сливок 10%, добавьте ${esp} г вашего эспрессо и ${rafVanillaSugar} г ванильного сахара. Взбейте стимером Gemilai 3006 в воздушный крем-пломбир.`
+                },
+                {
+                    name: 'Классический Капучино',
+                    badge: 'Баланс 1:4.4',
+                    rows: [
+                        { k: 'Эспрессо:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Молоко 3.2%:', v: `${Math.round(esp * 4.4)} г (мл)`, cls: 'text-white font-bold' },
+                        { k: 'Глянцевая пена:', v: '10–12 мм', cls: 'text-emerald-400' },
+                        { k: 'Температура:', v: '58–62 °C', cls: 'text-sky-300' }
+                    ],
+                    note: `Шот ${esp} г + ${Math.round(esp * 4.4)} г молока. Идеальный баланс натуральной сладости лактозы и кофейного тела (${c.notes.split(',')[0]}).`
+                },
+                {
+                    name: 'Флэт Уайт (Flat White)',
+                    badge: 'Яркий кофе 1:3.1',
+                    rows: [
+                        { k: 'Эспрессо (база):', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Молоко 3.2%:', v: `${Math.round(esp * 3.1)} г (мл)`, cls: 'text-white font-bold' },
+                        { k: 'Микропена:', v: '3–4 мм (эластичная)', cls: 'text-emerald-400' },
+                        { k: 'Температура:', v: '58–60 °C', cls: 'text-sky-300' }
+                    ],
+                    note: `Насыщенный кофейный вкус на базе ${esp} г шота и тонкого слоя микропены (${Math.round(esp * 3.1)} г молока). Отлично подходит для латте-арта.`
+                },
+                {
+                    name: 'Латте (Caffè Latte)',
+                    badge: 'Мягкий сливочный 1:6.0',
+                    rows: [
+                        { k: 'Эспрессо:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Молоко 3.2%:', v: `${Math.round(esp * 6.0)} г (мл)`, cls: 'text-white font-bold' },
+                        { k: 'Слой пены:', v: '5–7 мм', cls: 'text-emerald-400' },
+                        { k: 'Температура:', v: '60–63 °C', cls: 'text-sky-300' }
+                    ],
+                    note: `Нежный молочно-десертный напиток: ${esp} г эспрессо мягко раскрываются в ${Math.round(esp * 6.0)} г вспененного молока.`
+                },
+                {
+                    name: 'Кортадо (Cortado 1:1)',
+                    badge: 'Испанская классика',
+                    rows: [
+                        { k: 'Эспрессо:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Теплое молоко:', v: `${Math.round(esp * 1.1)} г (мл)`, cls: 'text-white font-bold' },
+                        { k: 'Тонкая пена:', v: '1–2 мм (шелковая)', cls: 'text-emerald-400' },
+                        { k: 'Температура:', v: '55–58 °C', cls: 'text-sky-300' }
+                    ],
+                    note: `Пропорция почти 1:1 (${esp} г кофе + ${Math.round(esp * 1.1)} г молока): смягчает кислотность шота, сохраняя максимальную плотность.`
+                },
+                {
+                    name: 'Айс-Латте (Iced Latte)',
+                    badge: 'Холодный слоистый',
+                    rows: [
+                        { k: 'Эспрессо:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Холодное молоко:', v: `${Math.round(esp * 4.2)} г (мл)`, cls: 'text-white font-bold' },
+                        { k: 'Лёд в кубах:', v: `${Math.round(esp * 2.6)} г`, cls: 'text-sky-300 font-bold' },
+                        { k: 'Подача:', v: 'Эспрессо сверху по льду', cls: 'text-emerald-400' }
+                    ],
+                    note: `Наполните бокал льдом (${Math.round(esp * 2.6)} г), влейте ${Math.round(esp * 4.2)} г холодного молока и аккуратно вылейте сверху ${esp} г эспрессо.`
+                }
+            ];
+
+            document.getElementById('milk-recipes-grid').innerHTML = milkList.map(m => `
+                <div class="bg-coffee-900/90 border border-coffee-700 rounded-xl p-3.5 flex flex-col justify-between hover:border-amber-400/60 transition">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <div class="font-bold text-white text-sm">${m.name}</div>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/35 shrink-0">${m.badge}</span>
+                        </div>
+                        <div class="bg-coffee-950 p-2.5 rounded-lg border border-coffee-800 text-xs font-mono space-y-1 mb-2">
+                            ${m.rows.map(r => `<div class="flex justify-between"><span class="text-coffee-300">${r.k}</span><span class="${r.cls}">${r.v}</span></div>`).join('')}
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-coffee-200 leading-relaxed">${m.note}</p>
+                </div>
+            `).join('');
+
+            const solids = (esp * sim.tds) / 100;
+            const americanoWater = Math.max(95, Math.min(240, Math.round(solids / 0.0135) - Math.round(esp)));
+            const garnishByOrigin = (c.id === 'ethiopia' || c.id === 'kenya' || c.id === 'rwanda')
+                ? 'Грейпфрут + веточка розмарина'
+                : 'Долька лайма + лед';
+
+            const blackList = [
+                {
+                    name: 'Классический Американо',
+                    badge: 'Целевой TDS 1.35%',
+                    rows: [
+                        { k: 'Эспрессо:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Горячая вода:', v: `${americanoWater} г (мл)`, cls: 'text-sky-300 font-bold' },
+                        { k: 'Температура воды:', v: '76–80 °C', cls: 'text-emerald-400' }
+                    ],
+                    note: `Добавьте ${americanoWater} г горячей воды (76–80 °C) к вашим ${esp} г эспрессо, чтобы получить чистую чашку фильтр-плотности без разрушения ароматики.`
+                },
+                {
+                    name: 'Лонг Блэк (Long Black)',
+                    badge: 'Австралийский стандарт',
+                    rows: [
+                        { k: 'Сначала вода (78°C):', v: `${Math.round(esp * 3.2)} г (мл)`, cls: 'text-sky-300 font-bold' },
+                        { k: 'Эспрессо сверху:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Шапка крема:', v: 'Сохраняется 100%', cls: 'text-emerald-400' }
+                    ],
+                    note: `Налейте в чашку ${Math.round(esp * 3.2)} г воды (78 °C), затем сварите сверху ${esp} г эспрессо — плотная тигровая крема останется нетронутой.`
+                },
+                {
+                    name: 'Эспрессо-Тоник (Espresso Tonic)',
+                    badge: 'Освежающий микс',
+                    rows: [
+                        { k: 'Эспрессо:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Индиан Тоник:', v: `${Math.round(esp * 3.8)} г (мл)`, cls: 'text-sky-300 font-bold' },
+                        { k: 'Лёд в бокал:', v: `${Math.round(esp * 2.5)} г`, cls: 'text-white font-bold' },
+                        { k: 'Гарнир к зерну:', v: garnishByOrigin, cls: 'text-emerald-400' }
+                    ],
+                    note: `В бокал со льдом (${Math.round(esp * 2.5)} г) налейте ${Math.round(esp * 3.8)} г охлажденного тоника и тонкой струйкой по ложке влейте ${esp} г эспрессо.`
+                },
+                {
+                    name: 'Бамбл Кофе (Карамельный апельсин)',
+                    badge: 'Фреш + Карамель',
+                    rows: [
+                        { k: 'Эспрессо:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Апельсиновый фреш:', v: `${Math.round(esp * 3.5)} г (мл)`, cls: 'text-amber-200 font-bold' },
+                        { k: 'Карамельный сироп:', v: `${Math.max(15, Math.round(esp * 0.48))} г (мл)`, cls: 'text-white font-bold' },
+                        { k: 'Лёд в кубах:', v: `${Math.round(esp * 2.6)} г`, cls: 'text-sky-300' }
+                    ],
+                    note: `Слоистый коктейль: на дно сироп (${Math.max(15, Math.round(esp * 0.48))} г), затем лед, свежевыжатый апельсиновый сок (${Math.round(esp * 3.5)} г) и сверху шот ${esp} г.`
+                },
+                {
+                    name: 'Айс-Американо (Iced Americano)',
+                    badge: 'Холодный черный',
+                    rows: [
+                        { k: 'Эспрессо:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Холодная вода:', v: `${Math.round(americanoWater * 0.62)} г (мл)`, cls: 'text-sky-300 font-bold' },
+                        { k: 'Лёд в кубах:', v: `${Math.round(americanoWater * 0.45)} г`, cls: 'text-white font-bold' }
+                    ],
+                    note: `Бодрящий чистый вкус: часть воды заменена на ${Math.round(americanoWater * 0.45)} г льда, чтобы по мере таяния баланс концентрации не размывался.`
+                },
+                {
+                    name: 'Аэрокано (Взбитый айс-эспрессо)',
+                    badge: 'Нитро-текстура паром',
+                    rows: [
+                        { k: 'Эспрессо:', v: `${esp} г`, cls: 'text-amber-300 font-bold' },
+                        { k: 'Ледяная вода:', v: `${Math.round(esp * 2.2)} г`, cls: 'text-sky-300 font-bold' },
+                        { k: 'Лёд в питчер:', v: `${Math.round(esp * 2.0)} г`, cls: 'text-white font-bold' },
+                        { k: 'Стимер 3006:', v: 'Аэрация паром 10–12 с', cls: 'text-emerald-400' }
+                    ],
+                    note: `Соедините в питчере ${esp} г эспрессо, ${Math.round(esp * 2.0)} г льда и ${Math.round(esp * 2.2)} г воды, взбейте паром Gemilai 3006 (10–12 с) до лавинного эффекта Гиннесса.`
+                }
+            ];
+
+            document.getElementById('black-recipes-grid').innerHTML = blackList.map(b => `
+                <div class="bg-coffee-900/90 border border-coffee-700 rounded-xl p-3.5 flex flex-col justify-between hover:border-sky-400/60 transition">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <div class="font-bold text-white text-sm">${b.name}</div>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 shrink-0">${b.badge}</span>
+                        </div>
+                        <div class="bg-coffee-950 p-2.5 rounded-lg border border-coffee-800 text-xs font-mono space-y-1 mb-2">
+                            ${b.rows.map(r => `<div class="flex justify-between"><span class="text-coffee-300">${r.k}</span><span class="${r.cls}">${r.v}</span></div>`).join('')}
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-coffee-200 leading-relaxed">${b.note}</p>
+                </div>
+            `).join('');
+        }
+
+        // ==========================================
+        // 8. EVENT LISTENERS & INIT
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            renderSelectors();
+            syncControlsUI();
+
+            document.getElementById('btn-apply-preset').addEventListener('click', applyPreset);
+
+            document.getElementById('inp-robusta').addEventListener('input', (e) => {
+                setRobusta(e.target.value);
+            });
+
+            document.getElementById('btn-grind-zoom').addEventListener('click', (e) => {
+                state.zoomGrind = !state.zoomGrind;
+                const inp = document.getElementById('inp-grind');
+                if (state.zoomGrind) {
+                    inp.min = 5; inp.max = 25;
+                    state.grind = Math.max(5, Math.min(25, state.grind));
+                    e.target.textContent = 'Зум 5–25';
+                    document.getElementById('lbl-grind-min').textContent = '5.0 (Мелко / Затык)';
+                    document.getElementById('lbl-grind-max').textContent = '25.0 (Крупно / Пробой)';
+                } else {
+                    inp.min = 0; inp.max = 90;
+                    e.target.textContent = 'Шкала 0–90';
+                    document.getElementById('lbl-grind-min').textContent = '0.0 (Ноль жерновов)';
+                    document.getElementById('lbl-grind-max').textContent = '90.0 (Френч-пресс)';
+                }
+                syncControlsUI();
+                updateAll();
+            });
+
+            const sliders = [
+                { id: 'inp-grind', key: 'grind', mode: 'time', intOnly: false },
+                { id: 'inp-dose', key: 'dose', mode: 'time', intOnly: false },
+                { id: 'inp-temp', key: 'temp', mode: 'time', intOnly: true },
+                { id: 'inp-opv', key: 'opv', mode: 'time', intOnly: false },
+                { id: 'inp-pause', key: 'pause', mode: 'time', intOnly: true },
+                { id: 'inp-shottime', key: 'shotTime', mode: 'time', intOnly: true },
+                { id: 'inp-ratio', key: 'ratio', mode: 'weight', intOnly: false }
+            ];
+
+            sliders.forEach(s => {
+                const el = document.getElementById(s.id);
+                if (!el) return;
+                el.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    if (s.key === 'opv') {
+                        state.opv = Math.max(6.0, Math.min(12.0, +(Math.round(val * 5) / 5).toFixed(1)));
+                    } else {
+                        state[s.key] = s.intOnly ? Math.round(val) : val;
+                    }
+                    setStopMode(s.mode);
+                    syncControlsUI();
+                    updateAll();
+                });
+            });
+
+            window.addEventListener('resize', () => updateAll());
+            applyPreset();
+        });
+    </script>
+</body>
+</html>
